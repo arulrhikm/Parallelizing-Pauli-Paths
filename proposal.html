@@ -187,48 +187,96 @@
             <p>While the above resources will provide most of the theoretical and practical tools needed for this project, there may be some additional computational resources required. Specifically, access to specialized quantum computing hardware or simulators (such as those available through platforms like IBM Qiskit, AWS Braket, or Microsoft Azure Quantum) will be crucial for benchmarking. By using these platforms, we can generate results to compare against our own simulations, helping us evaluate the performance and accuracy of our Pauli paths implementation. This comparison will be key for identifying areas where our simulator can be optimized or refined.</p>
         </div>
 
+    <div class="content-section">
+        <h2>Goals and Deliverables</h2>
+
+        <h3><u>Plan to Achieve:</u></h3>
+        <ul>
+            <li>
+                <strong>Implement a parallel GPU-based Pauli Path simulator.</strong><br>
+                Build a CUDA/C++ implementation of the Pauli Path algorithm that exploits
+                embarrassingly parallel steps—particularly independent Pauli word evolution.
+            </li>
+
+            <li>
+                <strong>Compare GPU implementation to CPU-based simulators.</strong><br>
+                Most current Pauli Path simulators operate on CPUs. We will benchmark our GPU version
+                against these implementations and analyze where performance differences arise.
+            </li>
+
+            <li>
+                <strong>Evaluate truncation strategies on GPUs.</strong><br>
+                Because the Pauli word set can grow large, we will investigate parallelizable
+                truncation/pruning approaches and measure their effect on performance,
+                memory usage, and simulation accuracy.
+            </li>
+        </ul>
+
+        <h3><u>Hope to Achieve:</u></h3>
+        <ul>
+            <li>
+                <strong>Match or exceed performance of public Pauli Path simulators.</strong><br>
+                Since GPU-optimized Pauli Path simulators are rare, we aim for substantial speedups
+                compared to existing CPU implementations.
+            </li>
+
+            <li>
+                <strong>Implement CPU multithreaded parallelism.</strong><br>
+                If time permits, we will extend our simulator with OpenMP/Pthreads-based
+                CPU parallelism to compare CPU- and GPU-parallelization strategies.
+            </li>
+        </ul>
+        <strong><u>Poster Demo Deliverables:</u></strong>
+        <ul>
+            <li>Speedup plots comparing CPU vs GPU implementations</li>
+            <li>Visualization of Pauli word population growth and truncation over time</li>
+            <li>Expectation-value outputs matching published simulators to validate correctness</li>
+        </ul>
+    </div>
+
         <div class="content-section">
-            <h2>Goals and Deliverables</h2>
-            <div class="goals-list">
-                <div class="goal-item">
-                    <strong>Plan to Achieve:</strong>
-                    <ul>
-                        <li>Implement parallelization for Pauli path computations</li>
-                        <li>Optimize for performance and scalability</li>
-                        <li>Deliver performance benchmarks for parallelized computations</li>
-                    </ul>
+            <h2>Schedule</h2>
+        
+            <div class="schedule">
+                <div class="schedule-item">
+                    <div class="week">Week 1 (11/17–11/23)</div>
+                    <div class="task">
+                        <ul>
+                            <li>Develop a working minimal C++/CUDA Pauli Path simulator for tiny circuits</li>
+                            <li>Establish baseline timings for later speedup comparisons</li>
+                        </ul>
+                    </div>
+                </div>
+        
+                <div class="schedule-item">
+                    <div class="week">Week 2 (11/24–11/30)</div>
+                    <div class="task">
+                        <ul>
+                            <li>Add and test truncation mechanisms</li>
+                            <li>Begin major optimization work </li>
+                        </ul>
+                    </div>
+                </div>
+        
+                <div class="schedule-item">
+                    <div class="week">Week 3 (12/1–1/8)</div>
+                    <div class="task">
+                        <ul>
+                            <li>Finalize GPU optimizations</li>
+                            <li>Run full benchmark suite and generate plots </li>
+                            <li> Produce final project poster </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="content-section">
             <h2>Platform Choice</h2>
-            <p>We will use multi-core CPUs and NVIDIA GPUs, taking advantage of CUDA programming for GPU acceleration.</p>
+            <p>
+            For hardware we will be using the GHC machines for both their multi-core CPUs and NVIDIA GPUs. We plan to write our entire project in C++ and CUDA
+            </p>
         </div>
-
-        <div class="content-section">
-            <h2>Schedule</h2>
-            <div class="schedule">
-                <div class="schedule-item">
-                    <div class="week">Week 1</div>
-                    <div class="task">Set up development environment and understand existing code</div>
-                </div>
-                <div class="schedule-item">
-                    <div class="week">Week 2</div>
-                    <div class="task">Implement basic parallelization for Pauli path computations</div>
-                </div>
-                <div class="schedule-item">
-                    <div class="week">Week 3</div>
-                    <div class="task">Optimize memory usage and improve parallel execution</div>
-                </div>
-                <div class="schedule-item">
-                    <div class="week">Week 4</div>
-                    <div class="task">Measure performance and finalize results</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <footer>
         <div class="container">
             <p>&copy; 2025 Parallelizing Pauli Paths Team (arulm, dragazzo)</p>
