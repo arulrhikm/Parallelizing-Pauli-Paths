@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build pauli_propagation.cpp",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "C:/Users/arulr/Projects/ParallelPauliPaths/pauli_propogation.cpp",  // Path to your C++ source file
+                "-o",
+                "C:/Users/arulr/Projects/ParallelPauliPaths/pauli_propagation.exe"  // Output executable
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Generated task to build pauli_propagation.cpp"
+        }
+    ]
+}
