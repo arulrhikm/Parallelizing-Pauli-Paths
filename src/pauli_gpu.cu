@@ -13,7 +13,11 @@ GET GATE QUBITS
 #include <iostream>
 #include <cstring>
 
-    // This stores the global constants
+#define THREADS_PER_BLOCK 256
+#define MAX_PAULI_WORDS_PER_BLOCK THREADS_PER_BLOCK
+#define MAX_QUBITS 10
+
+// This stores the global constants
 struct GlobalConstants
 {
     int num_qubits;
@@ -41,14 +45,14 @@ pauliWordWeight(Pauli *pauli_word)
 }
 
 __device__ __inline__ void
-cleanupAndTruncate(int max_weight, Pauli *pauli_word, cuDoubleComplex *phase)
-{
-    //seems like you need to need to deal with duplicates
-    if (cuCabs(*phase) <= 1e-10) {
-        *phase = make_cuDoubleComplex(0.0, 0.0);
+cleanupAndTruncate(int max_weight, Pauli *pauli_word, cuDoubleComplex &phase)
+{   
+    //for now duplicates just remain seperate
+    if (cuCabs(phase) <= 1e-10) {
+        phase = make_cuDoubleComplex(0.0, 0.0);
     } else if (pauliWordWeight(pauli_word) > max_weight)
     {
-        *phase = make_cuDoubleComplex(0.0, 0.0);
+        phase = make_cuDoubleComplex(0.0, 0.0);
     }
 }
 
@@ -94,10 +98,12 @@ pauliToString(Pauli p)
     }
 }
 
+
 // Kernel implementation
 __global__ void pauli_propagation_kernel(int max_weight)
 {
-
+    // __shared__ Pauli pauli_words[MAX_PAULI_WORDS * cuPauliPropConst.num_qubits];
+    // __shared__ cuDoubleComplex coeffs[MAX_PAULI_WORDS];
     int word_idx = blockIdx.x * blockDim.x + threadIdx.x;
     int num_qubits = cuPauliPropConst.num_qubits;
 
@@ -121,10 +127,10 @@ __global__ void pauli_propagation_kernel(int max_weight)
         gate_qubits.x = cuPauliPropConst.gate_qubits[2 * gate_idx];
         gate_qubits.y = cuPauliPropConst.gate_qubits[2 * gate_idx + 1];
         // Apply gate conjugation
-        apply_gate_device(gate_type, gate_qubits, pauli_word, &phase);
+        apply_gate_device(gate_type, gate_qubits, pauli_word, phase);
         phase = cuCmul(old_phase, phase);
         // cleanup + truncation
-        cleanupAndTruncate(max_weight, pauli_word, &phase);
+        cleanupAndTruncate(max_weight, pauli_word, phase);
     }
     for (int i = 0; i < num_qubits; i++)
     {
@@ -132,7 +138,6 @@ __global__ void pauli_propagation_kernel(int max_weight)
     }
     cuPauliPropConst.coeffs[word_idx] = phase;
 
-        // cuPauliPropConst.coeffs[word_idx] = phase;
     if (word_idx == 0)
     {
         double2 result = computeExpecation();
@@ -291,7 +296,7 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
     }
 
     // Configure kernel launch parameters
-    int blockSize = 256;                                     // Threads per block
+    int blockSize = THREADS_PER_BLOCK;                       // Threads per block
     int numBlocks = (num_words + blockSize - 1) / blockSize; // Ceiling division
 
     std::cout << "Launching GPU kernel with " << numBlocks << " blocks, "

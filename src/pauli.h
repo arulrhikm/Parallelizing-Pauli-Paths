@@ -10,7 +10,7 @@
 using Complex = std::complex<double>;
 
 // Pauli matrices encoded as simple enum values for convenience.
-enum Pauli
+enum Pauli : char
 {
     I = 0,
     X,

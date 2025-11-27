@@ -3,14 +3,14 @@
 #include <cuComplex.h>
 
 __inline__ __device__ void
-flip_sign(cuDoubleComplex *coeff)
+flip_sign(cuDoubleComplex &coeff)
 {
-    coeff->x *= -1.0;
-    coeff->y *= -1.0;
+    coeff.x *= -1.0;
+    coeff.y *= -1.0;
 }
 
 __inline__ __device__ void
-cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
+cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
 {
     int c = gate_qubits.x;
     int t = gate_qubits.y;
@@ -106,7 +106,7 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *co
 }
 
 __inline__ __device__ void
-s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
+s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
 {
     int t = gate_qubits.x;
     Pauli p = pauli_word[t];
@@ -123,7 +123,7 @@ s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *
 }
 
 __inline__ __device__ void
-hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
+hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
 {
     int t = gate_qubits.x;
     Pauli p = pauli_word[t];
@@ -145,7 +145,7 @@ hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex
 }
 
 __inline__ __device__ void
-apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
+apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
 {
     switch (gate)
     {
