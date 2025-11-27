@@ -1,9 +1,13 @@
 #include <iostream>
 #include <iomanip>
+#include <vector>
+#include <map>
+#include <string>
+#include <complex>
 #include "pauli.h"
 #include "pauli_gpu.h"
+#include "tests.h"
 
-void run_all_tests(); // from tests.cpp
 
 int main()
 {
@@ -12,7 +16,7 @@ int main()
     std::cout << "   PAULI PROPAGATION SIMULATOR TESTS\n";
     std::cout << "========================================\n\n";
 
-    run_all_tests();
+    run_all_tests(false);
 
     std::cout << "========================================\n";
     std::cout << "   ALL TESTS COMPLETED\n";

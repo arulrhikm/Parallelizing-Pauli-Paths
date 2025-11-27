@@ -21,7 +21,8 @@ struct GlobalConstants
     int num_gates;
     Pauli *pauli_words;
     cuDoubleComplex *coeffs;
-    GateType *gates;
+    GateType *gate_types;
+    int *gate_qubits;
     double *result;
 };
 
@@ -42,6 +43,7 @@ pauliWordWeight(Pauli *pauli_word)
 __device__ __inline__ void
 cleanupAndTruncate(int max_weight, Pauli *pauli_word, cuDoubleComplex *phase)
 {
+    //seems like you need to need to deal with duplicates
     if (cuCabs(*phase) <= 1e-10) {
         *phase = make_cuDoubleComplex(0.0, 0.0);
     } else if (pauliWordWeight(pauli_word) > max_weight)
@@ -112,11 +114,12 @@ __global__ void pauli_propagation_kernel(int max_weight)
     // Apply gates in reverse order (Heisenberg picture)
     for (int gate_idx = cuPauliPropConst.num_gates - 1; gate_idx >= 0; --gate_idx)
     {
-        const GateType gate = cuPauliPropConst.gates[gate_idx];
-        const int2 changeQubit{0, 1};
-
+        const GateType gate_type = cuPauliPropConst.gate_types[gate_idx];
+        int2 gate_qubits;
+        gate_qubits.x = cuPauliPropConst.gate_qubits[2 * gate_idx];
+        gate_qubits.y = cuPauliPropConst.gate_qubits[2 * gate_idx + 1];
         // Apply gate conjugation
-        apply_gate_device(gate, changeQubit, pauli_word, phase);
+        apply_gate_device(gate_type, gate_qubits, pauli_word, phase);
 
         //printf("APPLY\n%c(%f,%f)\n", pauliToString(pauli_word[0]), phase.x, phase.y);
         //cleanup + truncation
@@ -140,33 +143,14 @@ __global__ void pauli_propagation_kernel(int max_weight)
 PauliSimulatorGPU::PauliSimulatorGPU(int num_qubits,
                                      const std::map<PauliWord, Complex> &init,
                                      const std::vector<Gate> &circuit)
-    : num_qubits(num_qubits), d_pauli_words(nullptr), d_coeffs(nullptr), d_gates(nullptr), d_result(nullptr)
+    : num_qubits(num_qubits), d_pauli_words(nullptr), d_coeffs(nullptr), 
+    d_gate_types(nullptr), d_gate_qubits(nullptr), d_result(nullptr)
 {
     // Flatten initial observable to device
-    flattenMapToDevice(init);
+    allocatePauliWords(init);
+    allocateGates(circuit);
 
     cudaMalloc(&d_result, 2 * sizeof(double));
-    
-    // Allocate and copy gates to device
-    if (!circuit.empty()) {
-        num_gates = circuit.size();
-        size_t gates_size = num_gates * sizeof(GateType);
-        cudaMalloc(&d_gates, gates_size);
-        //TODO: BIG TROUBLE HERE
-        GateType *gateTypes = new GateType[num_gates];
-        for (int i = 0; i < num_gates; ++i) {
-            gateTypes[i] = circuit[i].type;
-        }
-        cudaMemcpy(d_gates, gateTypes, gates_size, cudaMemcpyHostToDevice);
-        delete[] gateTypes;
-
-        // Check for any CUDA errors
-        cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) {
-            std::cerr << "CUDA error during initialization: " << cudaGetErrorString(err) << std::endl;
-            cleanup();
-        }
-    }
 
     GlobalConstants params;
     params.num_qubits = num_qubits;
@@ -174,7 +158,8 @@ PauliSimulatorGPU::PauliSimulatorGPU(int num_qubits,
     params.num_gates = num_gates;
     params.pauli_words = d_pauli_words;
     params.coeffs = (cuDoubleComplex *) d_coeffs;
-    params.gates = d_gates;
+    params.gate_types = d_gate_types;
+    params.gate_qubits = d_gate_qubits;
     params.result = d_result;
     cudaMemcpyToSymbol(cuPauliPropConst, &params, sizeof(GlobalConstants));
 }
@@ -194,15 +179,23 @@ void PauliSimulatorGPU::cleanup()
         cudaFree(d_coeffs);
         d_coeffs = nullptr;
     }
-    if (d_gates) {
-        cudaFree(d_gates);
-        d_gates = nullptr;
+    if (d_gate_types) {
+        cudaFree(d_gate_types);
+        d_gate_types = nullptr;
+    }
+    if (d_gate_qubits) {
+        cudaFree(d_gate_qubits);
+        d_gate_qubits = nullptr;
+    }
+    if (d_result) {
+        cudaFree(d_result);
+        d_result = nullptr;
     }
     
     cudaDeviceSynchronize();
 }
 
-void PauliSimulatorGPU::flattenMapToDevice(const std::map<PauliWord, Complex> &obs)
+void PauliSimulatorGPU::allocatePauliWords(const std::map<PauliWord, Complex> &obs)
 {
     num_words = obs.size();
     if (num_words == 0) {
@@ -248,6 +241,40 @@ void PauliSimulatorGPU::flattenMapToDevice(const std::map<PauliWord, Complex> &o
     if (err != cudaSuccess) {
         std::cerr << "CUDA error in flattenToDevice: " << cudaGetErrorString(err) << std::endl;
         cleanup();
+    }
+}
+
+void PauliSimulatorGPU::allocateGates(const std::vector<Gate> &circuit) {
+    // Allocate and copy gates to device
+    if (!circuit.empty())
+    {
+        num_gates = circuit.size();
+        size_t gate_types_size = num_gates * sizeof(GateType);
+        size_t gate_qubits_size = num_gates * sizeof(int) * 2;
+        GateType *gateTypes = new GateType[num_gates];
+        int *gateQubits = new int[num_gates * 2];
+
+        for (int i = 0; i < num_gates; ++i)
+        {
+            gateTypes[i] = circuit[i].type;
+            gateQubits[2 * i] = circuit[i].qubits[0];
+            gateQubits[2 * i + 1] = circuit[i].qubits.size() > 1 ? circuit[i].qubits[1] : 0;
+        }
+
+        cudaMalloc(&d_gate_types, gate_types_size);
+        cudaMalloc(&d_gate_qubits, gate_qubits_size);
+        cudaMemcpy(d_gate_types, gateTypes, gate_types_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_gate_qubits, gateQubits, gate_qubits_size, cudaMemcpyHostToDevice);
+        delete[] gateTypes;
+        delete [] gateQubits;
+
+        // Check for any CUDA errors
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess)
+        {
+            std::cerr << "CUDA error during initialization: " << cudaGetErrorString(err) << std::endl;
+            cleanup();
+        }
     }
 }
 
