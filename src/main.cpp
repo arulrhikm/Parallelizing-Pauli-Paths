@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "pauli.h"
+#include "pauli_gpu.h"
 
 void run_all_tests(); // from tests.cpp
 

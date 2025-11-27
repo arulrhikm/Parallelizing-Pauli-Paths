@@ -1,14 +1,16 @@
-#include "puali.h"
+#include "pauli.h"
 #include <cuda_runtime.h>
+#include <cuComplex.h>
 
-__device__ __inline__ void
-flip_sign(double2 *coeff) {
+__inline__ __device__ void
+flip_sign(cuDoubleComplex *coeff)
+{
     coeff->x *= -1.0;
     coeff->y *= -1.0;
 }
 
-__device__ __inline__ void
-cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+__inline__ __device__ void
+cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
 {
     int c = gate_qubits.x;
     int t = gate_qubits.y;
@@ -103,8 +105,8 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
     }
 }
 
-__device__ __inline__ void
-s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+__inline__ __device__ void
+s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
 {
     int t = gate_qubits.x;
     Pauli p = pauli_word[t];
@@ -120,8 +122,8 @@ s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
     }
 }
 
-__device__ __inline__ void
-hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+__inline__ __device__ void
+hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
 {
     int t = gate_qubits.x;
     Pauli p = pauli_word[t];
@@ -142,7 +144,8 @@ hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
     }
 }
 
-__device__ __inline__ void apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+__inline__ __device__ void
+apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex *coeff)
 {
     switch (gate)
     {
@@ -150,12 +153,13 @@ __device__ __inline__ void apply_gate_device(GateType gate, int2 gate_qubits, Pa
             cnot_conjugation_device(gate_qubits, pauli_word, coeff);
             break;
         case HADAMARD:
-            hadamard_conjugation_device(g, pw);
+            hadamard_conjugation_device(gate_qubits, pauli_word, coeff);
             break;
         case S:
-            s_gate_conjugation_device(g, pw);
+            s_gate_conjugation_device(gate_qubits, pauli_word, coeff);
             break;
         default:
             //need more shit i guess
+            break;
     }
 }

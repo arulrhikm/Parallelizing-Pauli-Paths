@@ -248,7 +248,12 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
                           int max_weight)
 {
     map<PauliWord, Complex> obs = init;
+    // cout << "START\n";
+    // for (auto &[pw, c] : obs)
+    // {
 
+    //     cout << pw.to_string() << c << "\n";
+    // }
     // Work backwards through the circuit.
     for (int i = (int)circuit.size() - 1; i >= 0; --i)
     {
@@ -279,12 +284,6 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
 
         // Apply weight truncation.
         obs = truncate_pauli_words(filtered, max_weight);
-        cout << "GATE FINISHED\n";
-        for (auto &[pw, c] : obs)
-        {
-            
-            cout << pw.to_string() << c << "\n";
-        }
     }
 
     // Final expectation.

@@ -1,4 +1,5 @@
 #include "pauli.h"
+#include "pauli_gpu.h"
 #include <iostream>
 #include <vector>
 #include <map>
@@ -11,7 +12,7 @@
 using namespace std;
 using Complex = complex<double>;
 
-void test_hadamard_on_z()
+static void test_hadamard_on_z()
 {
     cout << "=== Test 1: Hadamard on Z ===\n";
     cout << "Circuit: H(0)\n";
@@ -23,12 +24,14 @@ void test_hadamard_on_z()
     map<PauliWord, Complex> obs = {{z, 1.0}};
     vector<Gate> circ = {Gate(HADAMARD, {0})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(1, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_hadamard_on_x()
+static void test_hadamard_on_x()
 {
     cout << "=== Test 2: Hadamard on X ===\n";
     cout << "Circuit: H(0)\n";
@@ -39,13 +42,16 @@ void test_hadamard_on_x()
 
     map<PauliWord, Complex> obs = {{x, 1.0}};
     vector<Gate> circ = {Gate(HADAMARD, {0})};
-
-    Complex r = pauli_propagation(obs, circ, 10);
+    cout << "===GPU===" << '\n';
+    PauliSimulatorGPU gpu(1, obs, circ);
+    Complex r = gpu.runPropagation(10);
+    cout << "===CPU===" << '\n';
+    Complex r1 = pauli_propagation(obs, circ, 10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_cnot_bell_state()
+static void test_cnot_bell_state()
 {
     cout << "=== Test 3: Bell state, ZZ ===\n";
     cout << "Circuit: H(0), CNOT(0,1)\n";
@@ -60,12 +66,14 @@ void test_cnot_bell_state()
         Gate(HADAMARD, {0}),
         Gate(CNOT, {0, 1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_cnot_bell_state_xx()
+static void test_cnot_bell_state_xx()
 {
     cout << "=== Test 4: Bell state, XX ===\n";
     cout << "Circuit: H(0), CNOT(0,1)\n";
@@ -80,12 +88,14 @@ void test_cnot_bell_state_xx()
         Gate(HADAMARD, {0}),
         Gate(CNOT, {0, 1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_identity_preservation()
+static void test_identity_preservation()
 {
     cout << "=== Test 5: Identity preservation ===\n";
     cout << "Circuit: H, CNOT, H\n";
@@ -99,12 +109,14 @@ void test_identity_preservation()
         Gate(CNOT, {0, 1}),
         Gate(HADAMARD, {1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_cnot_xi_to_xx()
+static void test_cnot_xi_to_xx()
 {
     cout << "=== Test 6: CNOT: XI -> XX ===\n";
     cout << "Expected: XX has zero expectation on |00⟩\n";
@@ -115,12 +127,14 @@ void test_cnot_xi_to_xx()
     map<PauliWord, Complex> obs = {{xi, 1.0}};
     vector<Gate> circ = {Gate(CNOT, {0, 1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_cnot_ix_to_ix()
+static void test_cnot_ix_to_ix()
 {
     cout << "=== Test 7: CNOT: IX -> IX ===\n";
     cout << "Expected: <IX> = 0\n";
@@ -131,12 +145,14 @@ void test_cnot_ix_to_ix()
     map<PauliWord, Complex> obs = {{ix, 1.0}};
     vector<Gate> circ = {Gate(CNOT, {0, 1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_cnot_iz_to_zz()
+static void test_cnot_iz_to_zz()
 {
     cout << "=== Test 8: CNOT: IZ -> ZZ ===\n";
     cout << "Expected: <ZZ> = 1 on |00⟩\n";
@@ -147,12 +163,14 @@ void test_cnot_iz_to_zz()
     map<PauliWord, Complex> obs = {{iz, 1.0}};
     vector<Gate> circ = {Gate(CNOT, {0, 1})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(2, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_s_twice()
+static void test_s_twice()
 {
     cout << "=== Test 9: S twice ===\n";
     cout << "Expected: S S Z S^{+} S^{+} = Z -> <Z> = 1\n";
@@ -163,12 +181,14 @@ void test_s_twice()
     map<PauliWord, Complex> obs = {{z, 1.0}};
     vector<Gate> circ = {Gate(S, {0}), Gate(S, {0})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(1, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_ghz_state()
+static void test_ghz_state()
 {
     cout << "=== Test 10: GHZ state, ZZI ===\n";
     cout << "Circuit: H(0), CNOT(0,1), CNOT(0,2)\n";
@@ -184,12 +204,14 @@ void test_ghz_state()
         Gate(CNOT, {0, 1}),
         Gate(CNOT, {0, 2})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(3, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_s_gate()
+static void test_s_gate()
 {
     cout << "=== Test 11: S on X ===\n";
     cout << "Expected: S X S^{+} = Y -> <Y> = 0\n";
@@ -200,12 +222,14 @@ void test_s_gate()
     map<PauliWord, Complex> obs = {{x, 1.0}};
     vector<Gate> circ = {Gate(S, {0})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(1, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }
 
-void test_double_hadamard()
+static void test_double_hadamard()
 {
     cout << "=== Test 12: double Hadamard ===\n";
     cout << "Expected: H H Z H H = Z -> <Z> = 1\n";
@@ -218,7 +242,9 @@ void test_double_hadamard()
         Gate(HADAMARD, {0}),
         Gate(HADAMARD, {0})};
 
-    Complex r = pauli_propagation(obs, circ, 10);
+    PauliSimulatorGPU gpu(1, obs, circ);
+
+    Complex r = gpu.runPropagation(10);
     cout << "Result: " << r << "\n";
     cout << "Status: " << (abs(r - 1.0) < 1e-10 ? "PASS" : "FAIL") << "\n\n";
 }

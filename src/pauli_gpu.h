@@ -1,11 +1,8 @@
-// PauliSimulatorGPU.hpp
-#pragma once
+#ifndef __PAULI_GPU_H__
+#define __PAULI_GPU_H__
 #include <map>
 #include <vector>
 #include "pauli.h"
-#include <cuda_runtime.h>
-
-using HostComplex = Complex;
 
 class PauliSimulatorGPU
 {
@@ -26,6 +23,7 @@ private:
     Pauli *d_pauli_words;
     double *d_coeffs;
     GateType *d_gates;
+    double *d_result;
 
     int num_qubits;
     int num_words;
@@ -34,3 +32,4 @@ private:
     // host flatten/rebuild utilities
     void flattenMapToDevice(const std::map<PauliWord, Complex> &obs);
 };
+#endif
