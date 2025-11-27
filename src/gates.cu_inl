@@ -1,0 +1,161 @@
+#include "puali.h"
+#include <cuda_runtime.h>
+
+__device__ __inline__ void
+flip_sign(double2 *coeff) {
+    coeff->x *= -1.0;
+    coeff->y *= -1.0;
+}
+
+__device__ __inline__ void
+cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+{
+    int c = gate_qubits.x;
+    int t = gate_qubits.y;
+
+    Pauli pc = pauli_word[c];
+    Pauli pt = pauli_word[t];
+
+    // These cases are derived from standard Pauli conjugation under CNOT.
+    // Kept explicit for clarity rather than using a compact formula.
+    if (pc == I && pt == I)
+    {
+        pauli_word[c] = I;
+        pauli_word[t] = I;
+    }
+    else if (pc == I && pt == X)
+    {
+        pauli_word[c] = I;
+        pauli_word[t] = X;
+    }
+    else if (pc == I && pt == Y)
+    {
+        pauli_word[c] = Z;
+        pauli_word[t] = Y;
+    }
+    else if (pc == I && pt == Z)
+    {
+        pauli_word[c] = Z;
+        pauli_word[t] = Z;
+    }
+    else if (pc == X && pt == I)
+    {
+        pauli_word[c] = X;
+        pauli_word[t] = X;
+    }
+    else if (pc == X && pt == X)
+    {
+        pauli_word[c] = X;
+        pauli_word[t] = I;
+    }
+    else if (pc == X && pt == Y)
+    {
+        pauli_word[c] = Y;
+        pauli_word[t] = Z;
+    }
+    else if (pc == X && pt == Z)
+    {
+        pauli_word[c] = Y;
+        pauli_word[t] = Y;
+        flip_sign(coeff);
+    }
+    else if (pc == Y && pt == I)
+    {
+        pauli_word[c] = Y;
+        pauli_word[t] = X;
+    }
+    else if (pc == Y && pt == X)
+    {
+        pauli_word[c] = Y;
+        pauli_word[t] = I;
+    }
+    else if (pc == Y && pt == Y)
+    {
+        pauli_word[c] = X;
+        pauli_word[t] = Z;
+        flip_sign(coeff);
+    }
+    else if (pc == Y && pt == Z)
+    {
+        pauli_word[c] = X;
+        pauli_word[t] = Y;
+    }
+    else if (pc == Z && pt == I)
+    {
+        pauli_word[c] = Z;
+        pauli_word[t] = I;
+    }
+    else if (pc == Z && pt == X)
+    {
+        pauli_word[c] = Z;
+        pauli_word[t] = X;
+    }
+    else if (pc == Z && pt == Y)
+    {
+        pauli_word[c] = I;
+        pauli_word[t] = Y;
+        flip_sign(coeff);
+    }
+    else if (pc == Z && pt == Z)
+    {
+        pauli_word[c] = I;
+        pauli_word[t] = Z;
+    }
+}
+
+__device__ __inline__ void
+s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+{
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+
+    if (p == X)
+    {
+        pauli_word[t] = Y;
+    }
+    else if (p == Y)
+    {
+        pauli_word[t] = X;
+        flip_sign(coeff);
+    }
+}
+
+__device__ __inline__ void
+hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+{
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+
+    // Basic H mapping rules.
+    if (p == X)
+    {
+        pauli_word[t] = Z;
+    }
+    else if (p == Y)
+    {
+        pauli_word[t] = Y;
+        flip_sign(coeff); // Y picks up a sign
+    }
+    else if (p == Z)
+    {
+        pauli_word[t] = X;
+    }
+}
+
+__device__ __inline__ void apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, double2 *coeff)
+{
+    switch (gate)
+    {
+        case CNOT:
+            cnot_conjugation_device(gate_qubits, pauli_word, coeff);
+            break;
+        case HADAMARD:
+            hadamard_conjugation_device(g, pw);
+            break;
+        case S:
+            s_gate_conjugation_device(g, pw);
+            break;
+        default:
+            //need more shit i guess
+    }
+}
