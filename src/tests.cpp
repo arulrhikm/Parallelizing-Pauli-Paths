@@ -216,19 +216,3 @@ void run_all_tests(bool use_gpu)
     cout << "Success Rate: " << fixed << setprecision(1)
          << (100.0 * passed_tests / total_tests) << "%\n";
 }
-
-// Optional: Individual test functions for backward compatibility
-static void test_hadamard_on_z()
-{
-    auto tests = create_test_cases();
-    run_single_test(tests[0], true);
-}
-
-static void test_hadamard_on_x()
-{
-    auto tests = create_test_cases();
-    run_single_test(tests[1], true);
-}
-
-// ... similar individual test functions for other tests
-// ... similar individual test functions for other tests
