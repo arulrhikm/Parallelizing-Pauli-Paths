@@ -107,33 +107,38 @@ __global__ void pauli_propagation_kernel(int max_weight)
     }
 
     // Each thread gets its own local copy of the Pauli word and coefficient
-    Pauli *pauli_word = &(cuPauliPropConst.pauli_words[word_idx * num_qubits]);
-    cuDoubleComplex *phase = &cuPauliPropConst.coeffs[word_idx];
+    Pauli *pauli_word = new Pauli[num_qubits];
+    for (int i = 0; i < num_qubits; i++) {
+        pauli_word[i] = cuPauliPropConst.pauli_words[word_idx * num_qubits + i];
+    }
+    cuDoubleComplex phase = cuPauliPropConst.coeffs[word_idx];
 
-    //printf("Start\n%c(%f,%f)\n", pauliToString(pauli_word[0]), phase.x, phase.y);
-    // Apply gates in reverse order (Heisenberg picture)
     for (int gate_idx = cuPauliPropConst.num_gates - 1; gate_idx >= 0; --gate_idx)
     {
+        cuDoubleComplex old_phase = phase;
         const GateType gate_type = cuPauliPropConst.gate_types[gate_idx];
         int2 gate_qubits;
         gate_qubits.x = cuPauliPropConst.gate_qubits[2 * gate_idx];
         gate_qubits.y = cuPauliPropConst.gate_qubits[2 * gate_idx + 1];
         // Apply gate conjugation
-        apply_gate_device(gate_type, gate_qubits, pauli_word, phase);
-
-        //printf("APPLY\n%c(%f,%f)\n", pauliToString(pauli_word[0]), phase.x, phase.y);
-        //cleanup + truncation
-        cleanupAndTruncate(max_weight, pauli_word, phase);
+        apply_gate_device(gate_type, gate_qubits, pauli_word, &phase);
+        phase = cuCmul(old_phase, phase);
+        // cleanup + truncation
+        cleanupAndTruncate(max_weight, pauli_word, &phase);
     }
-    //printf("Trunc\n%c(%f,%f)\n", pauliToString(pauli_word[0]), phase.x, phase.y);
+    for (int i = 0; i < num_qubits; i++)
+    {
+        cuPauliPropConst.pauli_words[word_idx * num_qubits + i] = pauli_word[i];
+    }
+    cuPauliPropConst.coeffs[word_idx] = phase;
 
-    //cuPauliPropConst.coeffs[word_idx] = phase;
-    if (word_idx == 0) {
+        // cuPauliPropConst.coeffs[word_idx] = phase;
+    if (word_idx == 0)
+    {
         double2 result = computeExpecation();
         cuPauliPropConst.result[0] = result.x;
         cuPauliPropConst.result[1] = result.y;
     }
-
 }
 
 /**
