@@ -231,3 +231,4 @@ static void test_hadamard_on_x()
 }
 
 // ... similar individual test functions for other tests
+// ... similar individual test functions for other tests
