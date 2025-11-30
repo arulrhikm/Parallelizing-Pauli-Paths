@@ -1,0 +1,58 @@
+====================================
+PAULI PROPAGATION - HOW TO RUN
+====================================
+
+QUICK START
+-----------
+If already compiled:
+    ./pauli_sim_cpu.exe -d cpu
+    ./diagnostic.exe
+
+
+BUILD FROM SCRATCH
+------------------
+Compile everything:
+    g++ -std=c++17 -Wall -O2 -DCPU_ONLY -c pauli.cpp tests.cpp main.cpp
+    g++ -std=c++17 -Wall -O2 pauli.o tests.o main.o -o pauli_sim_cpu.exe
+
+Build diagnostic tool:
+    g++ -std=c++17 -Wall -O2 -c diagnostic.cpp
+    g++ -std=c++17 -Wall -O2 diagnostic.o pauli.o -o diagnostic.exe
+
+
+RUN TESTS
+---------
+Run all 22 test cases:
+    ./pauli_sim_cpu.exe -d cpu
+
+The tests check:
+- Basic Clifford gates (H, CNOT, S, T)
+- Rotation gates (RX, RY, RZ)
+- Multi-qubit entangled circuits
+- Deep layered circuits
+
+
+RUN DIAGNOSTIC
+--------------
+See Pauli word expansion in action:
+    ./diagnostic.exe
+
+This shows how:
+- Clifford gates keep Pauli word count constant
+- Rotation gates cause Pauli word expansion
+- Multiple rotations lead to exponential growth
+
+
+CLEAN UP
+--------
+Remove object files:
+    rm *.o        (Linux/Mac)
+    Remove-Item *.o    (Windows PowerShell)
+
+
+NOTES
+-----
+- The -DCPU_ONLY flag compiles without GPU support
+- All executables are in the src/ directory
+- Tests should pass with 100% success rate
+

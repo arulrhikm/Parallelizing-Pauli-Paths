@@ -51,6 +51,7 @@ struct Gate
 };
 
 PauliWord apply_gate_conjugation(const Gate &g, const PauliWord &pw);
+std::map<PauliWord, Complex> apply_gate_conjugation_multi(const Gate &g, const PauliWord &pw);
 std::map<PauliWord, Complex> truncate_pauli_words(const std::map<PauliWord, Complex> &in, int max_w);
 Complex compute_expectation(const PauliWord &pw);
 Complex pauli_propagation(const std::map<PauliWord, Complex> &init,

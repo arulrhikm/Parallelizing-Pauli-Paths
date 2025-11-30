@@ -29,7 +29,7 @@ bool PauliWord::operator==(const PauliWord &other) const
     return ops == other.ops;
 }
 
-    // Count how many components are non-identity.
+// Count how many components are non-identity.
 int PauliWord::weight() const
 {
     int w = 0;
@@ -97,6 +97,27 @@ PauliWord apply_s_gate_conjugation(const Gate &g, const PauliWord &pw)
     {
         out.ops[t] = X;
         out.phase *= -1.0;
+    }
+    return out;
+}
+
+// T gate conjugation
+PauliWord apply_t_gate_conjugation(const Gate &g, const PauliWord &pw)
+{
+    PauliWord out = pw;
+    int t = g.qubits[0];
+    Pauli p = pw.ops[t];
+    
+    // Simplified T gate - not fully Clifford
+    if (p == X)
+    {
+        out.ops[t] = Y;
+        out.phase *= Complex(1.0/sqrt(2.0), 1.0/sqrt(2.0));
+    }
+    else if (p == Y)
+    {
+        out.ops[t] = X;
+        out.phase *= Complex(1.0/sqrt(2.0), -1.0/sqrt(2.0));
     }
     return out;
 }
@@ -200,7 +221,98 @@ PauliWord apply_cnot_conjugation(const Gate &g, const PauliWord &pw)
     return out;
 }
 
-// Dispatch the appropriate conjugation rule.
+// Handle rotation gates that produce multiple Pauli terms
+map<PauliWord, Complex> apply_gate_conjugation_multi(const Gate &g, const PauliWord &pw)
+{
+    map<PauliWord, Complex> result;
+    int t = g.qubits[0];
+    Pauli p = pw.ops[t];
+    double theta = g.angle;
+    
+    if (g.type == RZ)
+    {
+        // X -> cos*X + sin*Y,  Y -> -sin*X + cos*Y,  Z -> Z
+        if (p == X)
+        {
+            PauliWord px = pw; px.ops[t] = X; px.phase = 1.0;
+            PauliWord py = pw; py.ops[t] = Y; py.phase = 1.0;
+            result[px] = pw.phase * cos(theta);
+            result[py] = pw.phase * sin(theta);
+        }
+        else if (p == Y)
+        {
+            PauliWord px = pw; px.ops[t] = X; px.phase = 1.0;
+            PauliWord py = pw; py.ops[t] = Y; py.phase = 1.0;
+            result[px] = pw.phase * (-sin(theta));
+            result[py] = pw.phase * cos(theta);
+        }
+        else
+        {
+            PauliWord unchanged = pw;
+            unchanged.phase = 1.0;
+            result[unchanged] = pw.phase;
+        }
+    }
+    else if (g.type == RX)
+    {
+        // Y -> cos*Y + sin*Z,  Z -> -sin*Y + cos*Z,  X -> X
+        if (p == Y)
+        {
+            PauliWord py = pw; py.ops[t] = Y; py.phase = 1.0;
+            PauliWord pz = pw; pz.ops[t] = Z; pz.phase = 1.0;
+            result[py] = pw.phase * cos(theta);
+            result[pz] = pw.phase * sin(theta);
+        }
+        else if (p == Z)
+        {
+            PauliWord py = pw; py.ops[t] = Y; py.phase = 1.0;
+            PauliWord pz = pw; pz.ops[t] = Z; pz.phase = 1.0;
+            result[py] = pw.phase * (-sin(theta));
+            result[pz] = pw.phase * cos(theta);
+        }
+        else
+        {
+            PauliWord unchanged = pw;
+            unchanged.phase = 1.0;
+            result[unchanged] = pw.phase;
+        }
+    }
+    else if (g.type == RY)
+    {
+        // X -> cos*X - sin*Z,  Z -> sin*X + cos*Z,  Y -> Y
+        if (p == X)
+        {
+            PauliWord px = pw; px.ops[t] = X; px.phase = 1.0;
+            PauliWord pz = pw; pz.ops[t] = Z; pz.phase = 1.0;
+            result[px] = pw.phase * cos(theta);
+            result[pz] = pw.phase * (-sin(theta));
+        }
+        else if (p == Z)
+        {
+            PauliWord px = pw; px.ops[t] = X; px.phase = 1.0;
+            PauliWord pz = pw; pz.ops[t] = Z; pz.phase = 1.0;
+            result[px] = pw.phase * sin(theta);
+            result[pz] = pw.phase * cos(theta);
+        }
+        else
+        {
+            PauliWord unchanged = pw;
+            unchanged.phase = 1.0;
+            result[unchanged] = pw.phase;
+        }
+    }
+    else
+    {
+        // Clifford gates only give one output
+        PauliWord transformed = apply_gate_conjugation(g, pw);
+        PauliWord key = transformed;
+        key.phase = 1.0;
+        result[key] = transformed.phase;
+    }
+    
+    return result;
+}
+
 PauliWord apply_gate_conjugation(const Gate &g, const PauliWord &pw)
 {
     switch (g.type)
@@ -211,8 +323,9 @@ PauliWord apply_gate_conjugation(const Gate &g, const PauliWord &pw)
         return apply_hadamard_conjugation(g, pw);
     case S:
         return apply_s_gate_conjugation(g, pw);
+    case T:
+        return apply_t_gate_conjugation(g, pw);
     default:
-        // STILL WORKING ON OTHER GATES
         return pw;
     }
 }
@@ -242,39 +355,35 @@ Complex compute_expectation(const PauliWord &pw)
     return pw.phase;
 }
 
-// Main Heisenberg-picture propagation of a Pauli observable.
+// Propagate observable backward through circuit
 Complex pauli_propagation(const map<PauliWord, Complex> &init,
                           const vector<Gate> &circuit,
                           int max_weight)
 {
     map<PauliWord, Complex> obs = init;
-    // cout << "START\n";
-    // for (auto &[pw, c] : obs)
-    // {
-
-    //     cout << pw.to_string() << c << "\n";
-    // }
-    // Work backwards through the circuit.
+    
+    // Go backwards through gates
     for (int i = (int)circuit.size() - 1; i >= 0; --i)
     {
         const Gate &g = circuit[i];
         map<PauliWord, Complex> updated;
 
-        // Transform each term under conjugation.
         for (auto &[pw, coeff] : obs)
         {
-            PauliWord transformed = apply_gate_conjugation(g, pw);
+            map<PauliWord, Complex> transformed_terms = apply_gate_conjugation_multi(g, pw);
+            
+            for (auto &[transformed, trans_phase] : transformed_terms)
+            {
+                // Strip phase from key
+                PauliWord key(transformed.ops.size());
+                key.ops = transformed.ops;
+                key.phase = 1.0;
 
-            // Use a canonical key with phase stripped out.
-            PauliWord key(transformed.ops.size());
-            key.ops = transformed.ops;
-            key.phase = 1.0;
-
-            Complex combined = coeff * transformed.phase;
-            updated[key] += combined;
+                updated[key] += coeff * trans_phase;
+            }
         }
 
-        // Drop tiny coefficients to keep the map clean.
+        // Drop small terms
         map<PauliWord, Complex> filtered;
         for (auto &[pw, c] : updated)
         {
@@ -282,11 +391,10 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
                 filtered[pw] = c;
         }
 
-        // Apply weight truncation.
         obs = truncate_pauli_words(filtered, max_weight);
     }
 
-    // Final expectation.
+    // Compute expectation value
     Complex exp_val = 0.0;
     for (auto &[pw, c] : obs)
     {
