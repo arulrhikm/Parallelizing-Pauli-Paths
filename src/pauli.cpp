@@ -133,7 +133,6 @@ PauliWord apply_cnot_conjugation(const Gate &g, const PauliWord &pw)
     Pauli pt = pw.ops[t];
 
     // These cases are derived from standard Pauli conjugation under CNOT.
-    // Kept explicit for clarity rather than using a compact formula.
     if (pc == I && pt == I)
     {
         out.ops[c] = I;
