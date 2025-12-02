@@ -370,6 +370,7 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
         for (auto &[pw, coeff] : obs)
         {
             map<PauliWord, Complex> transformed_terms = apply_gate_conjugation_multi(g, pw);
+
             
             for (auto &[transformed, trans_phase] : transformed_terms)
             {
@@ -388,9 +389,18 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
         {
             if (abs(c) > 1e-10)
                 filtered[pw] = c;
-        }
 
+        }
+        
         obs = truncate_pauli_words(filtered, max_weight);
+
+        cout << "Gate Finished" << endl;
+        for (auto &[pw, c] : obs)
+        {
+            cout << pw.to_string()
+                 << c << endl;
+        }
+        cout << "===============\n";
     }
 
     // Compute expectation value

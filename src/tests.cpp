@@ -324,9 +324,9 @@ static vector<TestCase> create_test_cases()
     return tests;
 }
 
-bool run_single_test(const TestCase &test, bool use_gpu)
+bool run_single_test(const TestCase &test, int i, bool use_gpu)
 {
-    cout << "=== " << test.name << " ===\n";
+    cout << "=== " << i + 1 << ". " << test.name << " ===\n";
 
     Complex result;
     if (use_gpu)
@@ -346,11 +346,21 @@ bool run_single_test(const TestCase &test, bool use_gpu)
 
     bool passed = abs(result - test.expected_result) < test.tolerance;
 
-    cout << "Result: " << result << "\n";
-    cout << "Expected: " << test.expected_result << "\n";
-    cout << "Status: " << (passed ? "PASS" : "FAIL") << "\n\n";
-
+    if (passed)
+    {
+        cout << "\033[92m" << "Status: PASS"  << "\033[0m" << "\n\n";
+    } else {
+        cout << "\033[31m" << "Status: FAIL" << "\033[0m" << "\n";
+        cout << "Result: " << result << "\n";
+        cout << "Expected: " << test.expected_result << "\n\n";
+    }
     return passed;
+}
+
+bool run_single_test(int i, bool use_gpu)
+{
+    auto test_cases = create_test_cases();
+    return run_single_test(test_cases[i], i, use_gpu);
 }
 
 void run_all_tests(bool use_gpu)
@@ -363,12 +373,14 @@ void run_all_tests(bool use_gpu)
          << (use_gpu ? "GPU" : "CPU") << " simulator\n";
     cout << "========================================\n\n";
 
+    int i = 0;
     for (const auto &test : test_cases)
     {
-        if (run_single_test(test, use_gpu))
+        if (run_single_test(test, i, use_gpu))
         {
             passed_tests++;
         }
+        i++;
     }
 
     cout << "========================================\n";
@@ -378,3 +390,4 @@ void run_all_tests(bool use_gpu)
     cout << "Success Rate: " << fixed << setprecision(1)
          << (100.0 * passed_tests / total_tests) << "%\n";
 }
+

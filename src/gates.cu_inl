@@ -3,10 +3,10 @@
 #include <cuComplex.h>
 
 __inline__ __device__ void
-flip_sign(cuDoubleComplex &coeff)
+cuCrealmul(cuDoubleComplex &coeff, double mult)
 {
-    coeff.x *= -1.0;
-    coeff.y *= -1.0;
+    coeff.x *= mult;
+    coeff.y *= mult;
 }
 
 __inline__ __device__ void
@@ -20,12 +20,14 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &co
 
     // These cases are derived from standard Pauli conjugation under CNOT.
     // Kept explicit for clarity rather than using a compact formula.
-    if (pc == I && pt == I)
-    {
-        pauli_word[c] = I;
-        pauli_word[t] = I;
-    }
-    else if (pc == I && pt == X)
+    // this does nothing and I would like an invariant that I^N is never touched by this shit
+    // if (pc == I && pt == I)
+    // {
+    //     pauli_word[c] = I;
+    //     pauli_word[t] = I;
+    // }
+    // else 
+    if (pc == I && pt == X)
     {
         pauli_word[c] = I;
         pauli_word[t] = X;
@@ -59,7 +61,7 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &co
     {
         pauli_word[c] = Y;
         pauli_word[t] = Y;
-        flip_sign(coeff);
+        cuCrealmul(coeff, -1.0);
     }
     else if (pc == Y && pt == I)
     {
@@ -75,7 +77,7 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &co
     {
         pauli_word[c] = X;
         pauli_word[t] = Z;
-        flip_sign(coeff);
+        cuCrealmul(coeff, -1.0);
     }
     else if (pc == Y && pt == Z)
     {
@@ -96,7 +98,7 @@ cnot_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &co
     {
         pauli_word[c] = I;
         pauli_word[t] = Y;
-        flip_sign(coeff);
+        cuCrealmul(coeff, -1.0);
     }
     else if (pc == Z && pt == Z)
     {
@@ -118,7 +120,7 @@ s_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &
     else if (p == Y)
     {
         pauli_word[t] = X;
-        flip_sign(coeff);
+        cuCrealmul(coeff, -1.0);
     }
 }
 
@@ -136,17 +138,145 @@ hadamard_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex
     else if (p == Y)
     {
         pauli_word[t] = Y;
-        flip_sign(coeff); // Y picks up a sign
+        cuCrealmul(coeff, -1.0); // Y picks up a sign
     }
     else if (p == Z)
     {
         pauli_word[t] = X;
     }
 }
+__inline__ __device__ void
+t_gate_conjugation_device(int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
+{
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+    
+
+    // Simplified T gate - not fully Clifford
+    if (p == X)
+    {
+        pauli_word[t] = Y;
+        cuDoubleComplex sqrt2 = make_cuDoubleComplex(1.0 / sqrt(2.0), 1.0 / sqrt(2.0));
+        coeff = cuCmul(coeff, sqrt2);
+    }
+    else if (p == Y)
+    {
+        pauli_word[t] = X;
+        cuDoubleComplex sqrt2 = make_cuDoubleComplex(1.0 / sqrt(2.0), -1.0 / sqrt(2.0));
+        coeff = cuCmul(coeff, sqrt2);
+    }
+}
+
+// returns true if split into two terms
+__inline__ __device__ void
+RZ_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
+                      Pauli *pauli_word, cuDoubleComplex &coeff,
+                      Pauli *extra_pauli, cuDoubleComplex &extra_coeff)
+{
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+
+    for (int i = 0; i < num_qubits; i++) {
+        extra_pauli[i] = pauli_word[i];
+    }
+    extra_coeff = coeff;
+
+
+    if (p == X)
+    {
+        pauli_word[t] = X;
+        extra_pauli[t] = Y;
+        cuCrealmul(coeff, cos(theta));
+        cuCrealmul(extra_coeff, sin(theta));
+    }
+    else if (p == Y)
+    {
+        pauli_word[t] = X;
+        extra_pauli[t] = Y;
+        cuCrealmul(coeff, -sin(theta));
+        cuCrealmul(extra_coeff, cos(theta));     
+    }
+    else
+    {
+        extra_coeff = make_cuDoubleComplex(0.0, 0.0);
+    }
+}
 
 __inline__ __device__ void
-apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
+RX_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
+                      Pauli *pauli_word, cuDoubleComplex &coeff,
+                      Pauli *extra_pauli, cuDoubleComplex &extra_coeff)
 {
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+
+    for (int i = 0; i < num_qubits; i++)
+    {
+        extra_pauli[i] = pauli_word[i];
+    }
+    extra_coeff = coeff;
+
+    if (p == Y)
+    {
+        
+        pauli_word[t] = Y;
+        extra_pauli[t] = Z;
+        cuCrealmul(coeff, cos(theta));
+        cuCrealmul(extra_coeff, sin(theta));
+    }
+    else if (p == Z)
+    {
+        pauli_word[t] = Y;
+        extra_pauli[t] = Z;
+        cuCrealmul(coeff, -sin(theta));
+        cuCrealmul(extra_coeff, cos(theta));
+    }
+    else
+    {
+        extra_coeff = make_cuDoubleComplex(0.0, 0.0);
+    }
+}
+
+__inline__ __device__ void
+RY_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
+                      Pauli *pauli_word, cuDoubleComplex &coeff,
+                      Pauli *extra_pauli, cuDoubleComplex &extra_coeff)
+{
+    int t = gate_qubits.x;
+    Pauli p = pauli_word[t];
+
+    for (int i = 0; i < num_qubits; i++)
+    {
+        extra_pauli[i] = pauli_word[i];
+    }
+    extra_coeff = coeff;
+
+    if (p == X)
+    {
+        pauli_word[t] = X;
+        extra_pauli[t] = Z;
+        cuCrealmul(coeff, cos(theta));
+        cuCrealmul(extra_coeff, -sin(theta));
+    }
+    else if (p == Z)
+    {
+        pauli_word[t] = X;
+        extra_pauli[t] = Z;
+        cuCrealmul(coeff, sin(theta));
+        cuCrealmul(coeff, cos(theta));
+    }
+    else
+    {
+        extra_coeff = make_cuDoubleComplex(0.0, 0.0);
+    }
+}
+
+__inline__ __device__ void
+apply_gate_device(int num_qubits, GateType gate, int2 gate_qubits, double angle,
+                Pauli *pauli_word, cuDoubleComplex &coeff, 
+                Pauli *extra_pauli_word, cuDoubleComplex &extra_coeff)
+{
+    cuDoubleComplex old_coeff = coeff;
     switch (gate)
     {
         case CNOT:
@@ -158,8 +288,23 @@ apply_gate_device(GateType gate, int2 gate_qubits, Pauli *pauli_word, cuDoubleCo
         case S:
             s_gate_conjugation_device(gate_qubits, pauli_word, coeff);
             break;
+        case T:
+            t_gate_conjugation_device(gate_qubits, pauli_word, coeff);
+            break;
+        case RX:
+            RX_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
+            extra_coeff = cuCmul(old_coeff, extra_coeff);
+            break;
+        case RY:
+            RY_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
+            extra_coeff = cuCmul(old_coeff, extra_coeff);
+            break;
+        case RZ:
+            RZ_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
+            extra_coeff = cuCmul(old_coeff, extra_coeff);
+            break;
         default:
-            //need more shit i guess
             break;
     }
+    coeff = cuCmul(old_coeff, coeff);
 }

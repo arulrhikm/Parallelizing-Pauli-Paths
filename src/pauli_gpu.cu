@@ -14,8 +14,11 @@ GET GATE QUBITS
 #include <cstring>
 
 #define THREADS_PER_BLOCK 256
-#define MAX_PAULI_WORDS_PER_BLOCK THREADS_PER_BLOCK
-#define MAX_QUBITS 10
+#define MAX_PAULI_WORDS (THREADS_PER_BLOCK * 4)
+#define MAX_QUBITS 4
+#define SHARED_BYTES_PER_BLOCK (MAX_PAULI_WORDS * MAX_QUBITS)
+#define SCAN_BLOCK_DIM THREADS_PER_BLOCK
+#include "exclusiveScan.cu_inl"
 
 // This stores the global constants
 struct GlobalConstants
@@ -27,10 +30,47 @@ struct GlobalConstants
     cuDoubleComplex *coeffs;
     GateType *gate_types;
     int *gate_qubits;
+    double *gate_angles;
     double *result;
 };
 
 __constant__ GlobalConstants cuPauliPropConst;
+
+__device__ __inline__ char
+pauliToString(Pauli p)
+{
+    switch (p)
+    {
+    case I:
+        return 'I';
+    case X:
+        return 'X';
+    case Y:
+        return 'Y';
+    case Z:
+        return 'Z';
+    default:
+        return '?';
+    }
+}
+
+__device__ __inline__ char
+printPauliWords(int local_id, int num_qubits, int num_words, Pauli *pauli_words, cuDoubleComplex *coeffs)
+{
+    __syncthreads();
+    if (local_id == 0) {
+        printf("============\n");
+        for (int i = 0; i < num_words; i++) {
+            int g_i = i * num_qubits;
+            for (int j = 0; j < num_qubits; j++) {
+                printf("%c", pauliToString(pauli_words[g_i + j]));
+            }
+            printf("\n(%f, %f)\n", coeffs[i].x, coeffs[i].y);
+        }
+        printf("============\n");
+    }
+    __syncthreads();
+}
 
 __device__ __inline__ int
 pauliWordWeight(Pauli *pauli_word)
@@ -44,22 +84,99 @@ pauliWordWeight(Pauli *pauli_word)
     return w;
 }
 
+__device__ __inline__ bool
+keep(int max_weight, Pauli *pauli_word, cuDoubleComplex &phase) {
+    // for now duplicates just remain seperate
+    return cuCabs(phase) > 1e-10 && pauliWordWeight(pauli_word) <= max_weight;
+}
+
+// len(flags) = SCAN_BLOCK_DIM
 __device__ __inline__ void
-cleanupAndTruncate(int max_weight, Pauli *pauli_word, cuDoubleComplex &phase)
-{   
-    //for now duplicates just remain seperate
-    if (cuCabs(phase) <= 1e-10) {
-        phase = make_cuDoubleComplex(0.0, 0.0);
-    } else if (pauliWordWeight(pauli_word) > max_weight)
+createFlags(int local_id, uint *flags, Pauli *pauli_words, cuDoubleComplex *coeffs, int max_weight, int start_idx)
+{
+    for (int i = local_id; i < SCAN_BLOCK_DIM - 1; i += THREADS_PER_BLOCK)
     {
-        phase = make_cuDoubleComplex(0.0, 0.0);
+        if (i + start_idx < MAX_PAULI_WORDS) {
+            int g_idx = (i + start_idx) * cuPauliPropConst.num_qubits;
+            flags[i] = (uint) keep(max_weight, &pauli_words[g_idx], coeffs[i + start_idx]);
+        } else {
+            flags[i] = 0;
+        }
+
+    }
+    // flags[SCAN_BLOCK_DIM - 1] = 0;
+    // if (local_id == 0) {
+    //     for (int i = 0; i < SCAN_BLOCK_DIM; i++)
+    //         printf("flags[%d] = %d\n", i, flags[i]);
+    // }
+}
+
+
+__device__ __inline__ int
+organizeIdxs(int local_id, uint *old_idxs, int old_start_idx, uint *prefixSumOutput)
+{
+    for (int i = local_id; i < SCAN_BLOCK_DIM - 1; i += THREADS_PER_BLOCK)
+    {
+        if (prefixSumOutput[i] != prefixSumOutput[i + 1])
+        {
+            old_idxs[prefixSumOutput[i]] = old_start_idx + i;
+        }
+    }
+    return prefixSumOutput[SCAN_BLOCK_DIM - 1];
+}
+
+__device__ __inline__ void
+loadSharedMemeory(int local_id, int new_start, uint *old_idxs, int length, Pauli *pauli_words, cuDoubleComplex *coeffs)
+{
+    for (int i = local_id; i < length; i += THREADS_PER_BLOCK)
+    {
+        int new_idx = i + new_start;
+        int old_idx = old_idxs[i];
+        for (int j = 0; j < cuPauliPropConst.num_qubits; j++)
+        {
+            pauli_words[new_idx + j] = pauli_words[old_idx + j];
+        }
+        coeffs[new_idx] = coeffs[old_idx];
+        if (old_idx != new_idx) {
+            coeffs[old_idx] = make_cuDoubleComplex(0.0, 0.0);
+        }   
+        
     }
 }
 
-__device__ __inline__ bool
-countExpectation(Pauli *word)
+// REQUIREMENTS:
+//  - Input array must have power-of-two length.
+//  - Number of threads in the thread block must be the size of the array!
+//  - SCAN_BLOCK_DIM is both the number of threads in the block (must be power of 2)
+//         and the number of elements that will be scanned.
+//          You should define this in your cudaRenderer.cu file,
+//          based on your implementation.
+//  - The parameter sScratch should be a pointer to an array with 2*SCAN_BLOCK_DIM elements
+//  - The 3 arrays should be in shared memory.
+__device__ __inline__ int
+cleanup(int local_id, int max_weight, Pauli *pauli_words, cuDoubleComplex *phases,
+        uint *prefixSumInput, uint *prefixSumOutput, uint *prefixSumScratch)
 {
-    for (int i = 0; i < cuPauliPropConst.num_qubits; i++)
+    int num_words = 0;
+    for (int seen_words = 0; seen_words < MAX_PAULI_WORDS; seen_words += SCAN_BLOCK_DIM - 1)
+    {
+        createFlags(local_id, prefixSumInput, pauli_words, phases, max_weight, seen_words);
+        __syncthreads();
+        sharedMemExclusiveScan(local_id, prefixSumInput, prefixSumOutput, prefixSumScratch, SCAN_BLOCK_DIM);
+        __syncthreads();
+        int newWords = organizeIdxs(local_id, prefixSumInput, seen_words, prefixSumOutput);
+        __syncthreads();
+        loadSharedMemeory(local_id, num_words, prefixSumInput, newWords, pauli_words, phases);
+        __syncthreads();
+        num_words += newWords;
+    }
+    return num_words;
+}
+
+__device__ __inline__ bool
+countExpectation(Pauli *word, int num_qubits)
+{
+    for (int i = 0; i < num_qubits; i++)
     {
         if (word[i] == X || word[i] == Y)
             return false;
@@ -68,82 +185,95 @@ countExpectation(Pauli *word)
 }
 
 __device__ __inline__ double2 
-computeExpecation() {
+computeExpecation(Pauli *pauli_words, cuDoubleComplex *coeffs, int num_words, int num_qubits) {
     cuDoubleComplex sum = make_cuDoubleComplex(0.0,0.0);
-    for (int word_idx = 0; word_idx < cuPauliPropConst.num_words; ++word_idx)
+    for (int word_idx = 0; word_idx < num_words; ++word_idx)
     {
-        if (countExpectation(&cuPauliPropConst.pauli_words[cuPauliPropConst.num_qubits * word_idx]))
+        //printf("coeff: (%f, %f)\n", coeffs[word_idx].x, coeffs[word_idx].y);
+        if (countExpectation(&pauli_words[num_qubits * word_idx], num_qubits))
         {
-            cuDoubleComplex coeff = cuPauliPropConst.coeffs[word_idx];
-            sum = cuCadd(sum, cuCmul(coeff, coeff));
+            cuDoubleComplex coeff = coeffs[word_idx];
+            sum = cuCadd(sum, coeff);
         }
     }
     return sum;
-}
-
-__device__ __inline__ char
-pauliToString(Pauli p)
-{
-    switch (p) {
-        case I:
-            return 'I';
-        case X:
-            return 'X';
-        case Y:
-            return 'Y';
-        case Z:
-            return 'Z';
-        default:
-            return '?';
-    }
 }
 
 
 // Kernel implementation
 __global__ void pauli_propagation_kernel(int max_weight)
 {
-    // __shared__ Pauli pauli_words[MAX_PAULI_WORDS * cuPauliPropConst.num_qubits];
-    // __shared__ cuDoubleComplex coeffs[MAX_PAULI_WORDS];
-    int word_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int num_qubits = cuPauliPropConst.num_qubits;
+    __shared__ Pauli pauli_words[SHARED_BYTES_PER_BLOCK];
+    __shared__ cuDoubleComplex coeffs[MAX_PAULI_WORDS];
+    __shared__ uint prefixSumInput[SCAN_BLOCK_DIM];
+    __shared__ uint prefixSumOutput[SCAN_BLOCK_DIM];
+    __shared__ uint prefixSumScratch[SCAN_BLOCK_DIM * 2];
 
-    if (word_idx >= cuPauliPropConst.num_words)
-    {
-        return;
-    }
+    int local_id = blockIdx.x * blockDim.x + threadIdx.x;
+    int num_qubits = cuPauliPropConst.num_qubits;
+    int num_words = cuPauliPropConst.num_words;
+    // probably need to zero out or smth
+    // must have half the number of bytes allowed incase every gate duplicates
+    int max_words = MAX_PAULI_WORDS / 2;
 
     // Each thread gets its own local copy of the Pauli word and coefficient
-    Pauli *pauli_word = new Pauli[num_qubits];
-    for (int i = 0; i < num_qubits; i++) {
-        pauli_word[i] = cuPauliPropConst.pauli_words[word_idx * num_qubits + i];
+    Pauli *extra_pauli_word = new Pauli[num_qubits];
+    for (int word_idx = local_id; word_idx < MAX_PAULI_WORDS; word_idx++) {
+        int g_word_idx = word_idx * num_qubits;
+        for (int i = 0; i < num_qubits; i++)
+        {
+            pauli_words[g_word_idx + i] = cuPauliPropConst.pauli_words[g_word_idx + i];
+        }
+        coeffs[word_idx] = cuPauliPropConst.coeffs[word_idx];
     }
-    cuDoubleComplex phase = cuPauliPropConst.coeffs[word_idx];
+    printPauliWords(local_id, num_qubits, 5, pauli_words, coeffs);
 
     for (int gate_idx = cuPauliPropConst.num_gates - 1; gate_idx >= 0; --gate_idx)
     {
-        cuDoubleComplex old_phase = phase;
         const GateType gate_type = cuPauliPropConst.gate_types[gate_idx];
         int2 gate_qubits;
         gate_qubits.x = cuPauliPropConst.gate_qubits[2 * gate_idx];
         gate_qubits.y = cuPauliPropConst.gate_qubits[2 * gate_idx + 1];
-        // Apply gate conjugation
-        apply_gate_device(gate_type, gate_qubits, pauli_word, phase);
-        phase = cuCmul(old_phase, phase);
-        // cleanup + truncation
-        cleanupAndTruncate(max_weight, pauli_word, phase);
+        double angle = cuPauliPropConst.gate_angles[gate_idx];
+        for (int i = local_id; i < num_words; i += THREADS_PER_BLOCK)
+        {
+            int g_i = i * num_qubits;
+            int extra_i = i + max_words;
+            int g_extra_i = extra_i * num_qubits;
+            apply_gate_device(num_qubits, gate_type, gate_qubits, angle,
+                              &pauli_words[g_i], coeffs[i],
+                              &pauli_words[g_extra_i], coeffs[extra_i]);
+        }
+        __syncthreads();
+        // if (local_id == 0) {
+        //     printf("========BEFORE CLEANUP==========\n");
+        //     for (int i = 0; i < MAX_PAULI_WORDS; i++) {
+        //         printf("coeff: (%f, %f)\n", coeffs[i].x, coeffs[i].y);
+        //     }
+        //     printf("================================\n");
+        // }
+        num_words = cleanup(local_id, max_weight, pauli_words, coeffs, prefixSumInput, prefixSumOutput, prefixSumScratch);
+        // if (local_id == 0)
+        // {
+        //     printf("========AFTER CLEANUP==========\n"); 
+        //     for (int i = 0; i < MAX_PAULI_WORDS; i++)
+        //     {
+        //         printf("coeff: (%f, %f)\n", coeffs[i].x, coeffs[i].y);
+        //     }
+        //     printf("===============================\n");
+        // }
+        
+        printPauliWords(local_id, num_qubits, 5, pauli_words, coeffs);
     }
-    for (int i = 0; i < num_qubits; i++)
-    {
-        cuPauliPropConst.pauli_words[word_idx * num_qubits + i] = pauli_word[i];
-    }
-    cuPauliPropConst.coeffs[word_idx] = phase;
 
-    if (word_idx == 0)
+    if (local_id == 0)
     {
-        double2 result = computeExpecation();
+        double2 result = computeExpecation(pauli_words, coeffs, num_words, num_qubits);
         cuPauliPropConst.result[0] = result.x;
         cuPauliPropConst.result[1] = result.y;
     }
+    // cuPauliPropConst.result[0] = 0.0;
+    // cuPauliPropConst.result[1] = 0.0;
 }
 
 /**
@@ -154,7 +284,8 @@ PauliSimulatorGPU::PauliSimulatorGPU(int num_qubits,
                                      const std::map<PauliWord, Complex> &init,
                                      const std::vector<Gate> &circuit)
     : num_qubits(num_qubits), d_pauli_words(nullptr), d_coeffs(nullptr), 
-    d_gate_types(nullptr), d_gate_qubits(nullptr), d_result(nullptr)
+    d_gate_types(nullptr), d_gate_qubits(nullptr), d_gate_angles(nullptr),
+    d_result(nullptr)
 {
     // Flatten initial observable to device
     allocatePauliWords(init);
@@ -170,6 +301,7 @@ PauliSimulatorGPU::PauliSimulatorGPU(int num_qubits,
     params.coeffs = (cuDoubleComplex *) d_coeffs;
     params.gate_types = d_gate_types;
     params.gate_qubits = d_gate_qubits;
+    params.gate_angles = d_gate_angles;
     params.result = d_result;
     cudaMemcpyToSymbol(cuPauliPropConst, &params, sizeof(GlobalConstants));
 }
@@ -197,6 +329,10 @@ void PauliSimulatorGPU::cleanup()
         cudaFree(d_gate_qubits);
         d_gate_qubits = nullptr;
     }
+    if (d_gate_angles) {
+        cudaFree(d_gate_qubits);
+        d_gate_qubits = nullptr;
+    }
     if (d_result) {
         cudaFree(d_result);
         d_result = nullptr;
@@ -215,18 +351,17 @@ void PauliSimulatorGPU::allocatePauliWords(const std::map<PauliWord, Complex> &o
     }
     
     // Allocate device memory for Pauli words (1 byte per qubit per word)
-    std::cout << "NUM QUBITS: " << num_qubits << "\n";
-    size_t pauli_words_size = num_words * num_qubits * sizeof(Pauli);
+    size_t pauli_words_size = MAX_PAULI_WORDS * num_qubits * sizeof(Pauli);
     cudaMalloc(&d_pauli_words, pauli_words_size);
     
     // Allocate device memory for coefficients (2 doubles per word: real and imag)
-    size_t coeffs_size = num_words * 2 * sizeof(double);
+    size_t coeffs_size = MAX_PAULI_WORDS * 2 * sizeof(double);
     cudaMalloc(&d_coeffs, coeffs_size);
     
     // Create host buffers for flattened data
-    std::vector<Pauli> h_pauli_words(num_words * num_qubits);
-    std::vector<double> h_coeffs(num_words * 2);
-    
+    std::vector<Pauli> h_pauli_words(MAX_PAULI_WORDS * num_qubits);
+    std::vector<double> h_coeffs(MAX_PAULI_WORDS * 2);
+
     // Flatten the observable map
     int word_idx = 0;
     for (const auto &[pw, coeff] : obs) {
@@ -241,7 +376,15 @@ void PauliSimulatorGPU::allocatePauliWords(const std::map<PauliWord, Complex> &o
         
         word_idx++;
     }
-    
+    for (; word_idx < MAX_PAULI_WORDS; ++word_idx)
+    {
+        for (int qubit = 0; qubit < num_qubits; ++qubit)
+        {
+            h_pauli_words[word_idx * num_qubits + qubit] = I;
+        }
+        h_coeffs[word_idx * 2] = 0.0;     // real part
+        h_coeffs[word_idx * 2 + 1] = 0.0; // imaginary part
+    }
     // Copy data to device
     cudaMemcpy(d_pauli_words, h_pauli_words.data(), pauli_words_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_coeffs, h_coeffs.data(), coeffs_size, cudaMemcpyHostToDevice);
@@ -256,27 +399,32 @@ void PauliSimulatorGPU::allocatePauliWords(const std::map<PauliWord, Complex> &o
 
 void PauliSimulatorGPU::allocateGates(const std::vector<Gate> &circuit) {
     // Allocate and copy gates to device
-    if (!circuit.empty())
-    {
+    if (!circuit.empty()) {
         num_gates = circuit.size();
         size_t gate_types_size = num_gates * sizeof(GateType);
         size_t gate_qubits_size = num_gates * sizeof(int) * 2;
+        size_t gate_angles_size = num_gates * sizeof(double);
         GateType *gateTypes = new GateType[num_gates];
         int *gateQubits = new int[num_gates * 2];
+        double *gateAngles = new double[num_gates];
 
         for (int i = 0; i < num_gates; ++i)
         {
             gateTypes[i] = circuit[i].type;
             gateQubits[2 * i] = circuit[i].qubits[0];
             gateQubits[2 * i + 1] = circuit[i].qubits.size() > 1 ? circuit[i].qubits[1] : 0;
+            gateAngles[i] = circuit[i].angle;
         }
 
         cudaMalloc(&d_gate_types, gate_types_size);
         cudaMalloc(&d_gate_qubits, gate_qubits_size);
+        cudaMalloc(&d_gate_angles, gate_angles_size);
         cudaMemcpy(d_gate_types, gateTypes, gate_types_size, cudaMemcpyHostToDevice);
         cudaMemcpy(d_gate_qubits, gateQubits, gate_qubits_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_gate_angles, gateAngles, gate_angles_size, cudaMemcpyHostToDevice);
         delete[] gateTypes;
-        delete [] gateQubits;
+        delete[] gateQubits;
+        delete[] gateAngles;
 
         // Check for any CUDA errors
         cudaError_t err = cudaGetLastError();
@@ -310,7 +458,7 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
     {
-        std::cerr << "Kernel launch failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "\033[31m" << "Kernel launch failed: " << cudaGetErrorString(err) << "\033[0m" << std::endl;
         return Complex(0.0, 0.0);
     }
 
@@ -321,11 +469,11 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
     err = cudaGetLastError();
     if (err != cudaSuccess)
     {
-        std::cerr << "Kernel execution failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "\033[31m" << "Kernel execution failed: " << cudaGetErrorString(err) << "\033[0m" << std::endl;
         return Complex(0.0, 0.0);
     }
 
-    std::cout << "GPU kernel completed successfully" << std::endl;
+    std::cout << "GPU kernel completed successfully"<< std::endl;
 
     // TODO: You'll need to add code here to:
     // 1. Copy results back from device to host

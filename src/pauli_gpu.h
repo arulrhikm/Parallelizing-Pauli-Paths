@@ -24,6 +24,7 @@ private:
     double *d_coeffs;
     GateType *d_gate_types;
     int *d_gate_qubits;
+    double *d_gate_angles;
     double *d_result;
 
     int num_qubits;
