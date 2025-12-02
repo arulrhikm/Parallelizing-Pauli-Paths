@@ -14,6 +14,7 @@ struct TestCase
     std::vector<Gate> circuit;
     std::complex<double> expected_result;
     double tolerance;
+    int repeat = 1; // number of times to repeat CPU propagation to increase runtime for stress tests
 };
 
 bool run_single_test(const TestCase &test, int i, bool use_gpu);

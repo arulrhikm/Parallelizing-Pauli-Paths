@@ -4,27 +4,31 @@ PAULI PROPAGATION - HOW TO RUN
 
 QUICK START
 -----------
-If already compiled:
-    ./pauli_sim_cpu.exe -d cpu
-    ./diagnostic.exe
+If already compiled (Windows PowerShell):
+    .\pauli_sim.exe -d cpu
+    .\diagnostic.exe
 
 
 BUILD FROM SCRATCH
 ------------------
-Compile everything:
-    g++ -std=c++17 -Wall -O2 -DCPU_ONLY -c pauli.cpp tests.cpp main.cpp
-    g++ -std=c++17 -Wall -O2 pauli.o tests.o main.o -o pauli_sim_cpu.exe
+Compile everything (PowerShell):
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/pauli.cpp src/main.cpp src/tests.cpp -Isrc -o pauli_sim.exe
 
 Build diagnostic tool:
-    g++ -std=c++17 -Wall -O2 -c diagnostic.cpp
-    g++ -std=c++17 -Wall -O2 diagnostic.o pauli.o -o diagnostic.exe
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic.exe
+
+Alternative: use provided scripts in repository root:
+    .\build_run_pauli.ps1       # build and run the main pauli simulator
+    .\build_run_diagnostic.ps1  # build and run the diagnostic tool
+    .\build_run_tests.ps1       # build and run tests (supports single-test index)
 
 
 RUN TESTS
----------
-Run all 22 test cases:
-    ./pauli_sim_cpu.exe -d cpu
+Run all tests (via script):
+    .\build_run_tests.ps1
 
+Run a single test (index N, 1-based):
+    .\build_run_tests.ps1 -Index 23
 The tests check:
 - Basic Clifford gates (H, CNOT, S, T)
 - Rotation gates (RX, RY, RZ)
@@ -34,8 +38,8 @@ The tests check:
 
 RUN DIAGNOSTIC
 --------------
-See Pauli word expansion in action:
-    ./diagnostic.exe
+See Pauli word expansion in action (script):
+    .\build_run_diagnostic.ps1
 
 This shows how:
 - Clifford gates keep Pauli word count constant
@@ -45,9 +49,10 @@ This shows how:
 
 CLEAN UP
 --------
-Remove object files:
-    rm *.o        (Linux/Mac)
-    Remove-Item *.o    (Windows PowerShell)
+Remove object files (PowerShell):
+    Remove-Item -Path "src\*.o" -ErrorAction SilentlyContinue
+Remove executables (PowerShell):
+    Remove-Item -Path "*.exe" -ErrorAction SilentlyContinue
 
 
 NOTES
