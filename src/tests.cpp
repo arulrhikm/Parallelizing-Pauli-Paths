@@ -389,5 +389,6 @@ void run_all_tests(bool use_gpu)
     cout << "Failed: " << (total_tests - passed_tests) << "/" << total_tests << "\n";
     cout << "Success Rate: " << fixed << setprecision(1)
          << (100.0 * passed_tests / total_tests) << "%\n";
+    cout << setprecision(6);
 }
 

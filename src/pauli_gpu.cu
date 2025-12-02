@@ -37,24 +37,6 @@ struct GlobalConstants
 __constant__ GlobalConstants cuPauliPropConst;
 
 __device__ __inline__ char
-pauliToString(Pauli p)
-{
-    switch (p)
-    {
-    case I:
-        return 'I';
-    case X:
-        return 'X';
-    case Y:
-        return 'Y';
-    case Z:
-        return 'Z';
-    default:
-        return '?';
-    }
-}
-
-__device__ __inline__ char
 printPauliWords(int local_id, int num_qubits, int num_words, Pauli *pauli_words, cuDoubleComplex *coeffs)
 {
     __syncthreads();
@@ -62,10 +44,7 @@ printPauliWords(int local_id, int num_qubits, int num_words, Pauli *pauli_words,
         printf("============\n");
         for (int i = 0; i < num_words; i++) {
             int g_i = i * num_qubits;
-            for (int j = 0; j < num_qubits; j++) {
-                printf("%c", pauliToString(pauli_words[g_i + j]));
-            }
-            printf("\n(%f, %f)\n", coeffs[i].x, coeffs[i].y);
+            printPauliWord(num_qubits, &pauli_words[g_i], coeffs[i]);
         }
         printf("============\n");
     }
@@ -126,15 +105,18 @@ organizeIdxs(int local_id, uint *old_idxs, int old_start_idx, uint *prefixSumOut
 }
 
 __device__ __inline__ void
-loadSharedMemeory(int local_id, int new_start, uint *old_idxs, int length, Pauli *pauli_words, cuDoubleComplex *coeffs)
+loadSharedMemeory(int local_id, int num_qubits, int new_start, uint *old_idxs, int length, 
+                  Pauli *pauli_words, cuDoubleComplex *coeffs)
 {
     for (int i = local_id; i < length; i += THREADS_PER_BLOCK)
     {
         int new_idx = i + new_start;
         int old_idx = old_idxs[i];
-        for (int j = 0; j < cuPauliPropConst.num_qubits; j++)
+        for (int j = 0; j < num_qubits; j++)
         {
-            pauli_words[new_idx + j] = pauli_words[old_idx + j];
+            int g_new = new_idx * num_qubits;
+            int g_old = old_idx * num_qubits;
+            pauli_words[g_new + j] = pauli_words[g_old + j];
         }
         coeffs[new_idx] = coeffs[old_idx];
         if (old_idx != new_idx) {
@@ -154,7 +136,7 @@ loadSharedMemeory(int local_id, int new_start, uint *old_idxs, int length, Pauli
 //  - The parameter sScratch should be a pointer to an array with 2*SCAN_BLOCK_DIM elements
 //  - The 3 arrays should be in shared memory.
 __device__ __inline__ int
-cleanup(int local_id, int max_weight, Pauli *pauli_words, cuDoubleComplex *phases,
+cleanup(int local_id, int num_qubits, int max_weight, Pauli *pauli_words, cuDoubleComplex *phases,
         uint *prefixSumInput, uint *prefixSumOutput, uint *prefixSumScratch)
 {
     int num_words = 0;
@@ -165,8 +147,11 @@ cleanup(int local_id, int max_weight, Pauli *pauli_words, cuDoubleComplex *phase
         sharedMemExclusiveScan(local_id, prefixSumInput, prefixSumOutput, prefixSumScratch, SCAN_BLOCK_DIM);
         __syncthreads();
         int newWords = organizeIdxs(local_id, prefixSumInput, seen_words, prefixSumOutput);
+        // if (local_id == 0 && newWords > 0) {
+        //     printf("HURRAY!!\n");
+        // }
         __syncthreads();
-        loadSharedMemeory(local_id, num_words, prefixSumInput, newWords, pauli_words, phases);
+        loadSharedMemeory(local_id, num_qubits, num_words, prefixSumInput, newWords, pauli_words, phases);
         __syncthreads();
         num_words += newWords;
     }
@@ -209,7 +194,7 @@ __global__ void pauli_propagation_kernel(int max_weight)
     __shared__ uint prefixSumOutput[SCAN_BLOCK_DIM];
     __shared__ uint prefixSumScratch[SCAN_BLOCK_DIM * 2];
 
-    int local_id = blockIdx.x * blockDim.x + threadIdx.x;
+    int local_id = threadIdx.x;
     int num_qubits = cuPauliPropConst.num_qubits;
     int num_words = cuPauliPropConst.num_words;
     // probably need to zero out or smth
@@ -226,7 +211,8 @@ __global__ void pauli_propagation_kernel(int max_weight)
         }
         coeffs[word_idx] = cuPauliPropConst.coeffs[word_idx];
     }
-    printPauliWords(local_id, num_qubits, 5, pauli_words, coeffs);
+    __syncthreads();
+    //printPauliWords(local_id, num_qubits, 2, pauli_words, coeffs);
 
     for (int gate_idx = cuPauliPropConst.num_gates - 1; gate_idx >= 0; --gate_idx)
     {
@@ -245,25 +231,15 @@ __global__ void pauli_propagation_kernel(int max_weight)
                               &pauli_words[g_extra_i], coeffs[extra_i]);
         }
         __syncthreads();
-        // if (local_id == 0) {
-        //     printf("========BEFORE CLEANUP==========\n");
-        //     for (int i = 0; i < MAX_PAULI_WORDS; i++) {
-        //         printf("coeff: (%f, %f)\n", coeffs[i].x, coeffs[i].y);
-        //     }
-        //     printf("================================\n");
-        // }
-        num_words = cleanup(local_id, max_weight, pauli_words, coeffs, prefixSumInput, prefixSumOutput, prefixSumScratch);
-        // if (local_id == 0)
-        // {
-        //     printf("========AFTER CLEANUP==========\n"); 
-        //     for (int i = 0; i < MAX_PAULI_WORDS; i++)
-        //     {
-        //         printf("coeff: (%f, %f)\n", coeffs[i].x, coeffs[i].y);
-        //     }
-        //     printf("===============================\n");
-        // }
-        
-        printPauliWords(local_id, num_qubits, 5, pauli_words, coeffs);
+        num_words = cleanup(local_id, num_qubits, max_weight, pauli_words, coeffs, 
+                            prefixSumInput, prefixSumOutput, prefixSumScratch);
+        //printPauliWords(local_id, num_qubits, 2, pauli_words, coeffs);
+        if (local_id == 0 && num_words > max_words) {
+            printf("WE ARE SOOOO FUCKED\n");
+            return;
+        }
+
+        //printPauliWords(local_id, num_qubits, 2, pauli_words, coeffs);
     }
 
     if (local_id == 0)
@@ -272,8 +248,6 @@ __global__ void pauli_propagation_kernel(int max_weight)
         cuPauliPropConst.result[0] = result.x;
         cuPauliPropConst.result[1] = result.y;
     }
-    // cuPauliPropConst.result[0] = 0.0;
-    // cuPauliPropConst.result[1] = 0.0;
 }
 
 /**
@@ -446,6 +420,10 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
     // Configure kernel launch parameters
     int blockSize = THREADS_PER_BLOCK;                       // Threads per block
     int numBlocks = (num_words + blockSize - 1) / blockSize; // Ceiling division
+    if (numBlocks > 1) {
+        std::cerr << "can only launch with 1 thread block" << std::endl;
+        return Complex(0.0, 0.0);
+    }
 
     std::cout << "Launching GPU kernel with " << numBlocks << " blocks, "
               << blockSize << " threads per block" << std::endl;

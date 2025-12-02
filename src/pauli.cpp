@@ -360,7 +360,14 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
                           int max_weight)
 {
     map<PauliWord, Complex> obs = init;
-    
+    cout << "===============\n";
+    for (auto &[pw, c] : obs)
+    {
+        cout << pw.to_string()
+             << c << endl;
+    }
+    cout << "===============\n";
+
     // Go backwards through gates
     for (int i = (int)circuit.size() - 1; i >= 0; --i)
     {
@@ -394,7 +401,7 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
         
         obs = truncate_pauli_words(filtered, max_weight);
 
-        cout << "Gate Finished" << endl;
+        cout << "===============\n";
         for (auto &[pw, c] : obs)
         {
             cout << pw.to_string()

@@ -2,6 +2,34 @@
 #include <cuda_runtime.h>
 #include <cuComplex.h>
 
+__device__ __inline__ char
+pauliToString(Pauli p)
+{
+    switch (p)
+    {
+    case I:
+        return 'I';
+    case X:
+        return 'X';
+    case Y:
+        return 'Y';
+    case Z:
+        return 'Z';
+    default:
+        return '?';
+    }
+}
+
+__device__ __inline__ char
+printPauliWord(int num_qubits, Pauli *pauli_word, cuDoubleComplex &coeff)
+{
+    for (int j = 0; j < num_qubits; j++)
+    {
+        printf("%c", pauliToString(pauli_word[j]));
+    }
+    printf("(%f, %f)\n", coeff.x, coeff.y);
+}
+
 __inline__ __device__ void
 cuCrealmul(cuDoubleComplex &coeff, double mult)
 {
@@ -181,7 +209,6 @@ RZ_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
     }
     extra_coeff = coeff;
 
-
     if (p == X)
     {
         pauli_word[t] = X;
@@ -244,7 +271,6 @@ RY_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
 {
     int t = gate_qubits.x;
     Pauli p = pauli_word[t];
-
     for (int i = 0; i < num_qubits; i++)
     {
         extra_pauli[i] = pauli_word[i];
@@ -263,7 +289,7 @@ RY_conjugation_device(int num_qubits, int2 gate_qubits, double theta,
         pauli_word[t] = X;
         extra_pauli[t] = Z;
         cuCrealmul(coeff, sin(theta));
-        cuCrealmul(coeff, cos(theta));
+        cuCrealmul(extra_coeff, cos(theta));
     }
     else
     {
@@ -276,7 +302,7 @@ apply_gate_device(int num_qubits, GateType gate, int2 gate_qubits, double angle,
                 Pauli *pauli_word, cuDoubleComplex &coeff, 
                 Pauli *extra_pauli_word, cuDoubleComplex &extra_coeff)
 {
-    cuDoubleComplex old_coeff = coeff;
+    //cuDoubleComplex old_coeff = coeff;
     switch (gate)
     {
         case CNOT:
@@ -293,18 +319,14 @@ apply_gate_device(int num_qubits, GateType gate, int2 gate_qubits, double angle,
             break;
         case RX:
             RX_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
-            extra_coeff = cuCmul(old_coeff, extra_coeff);
             break;
         case RY:
             RY_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
-            extra_coeff = cuCmul(old_coeff, extra_coeff);
             break;
         case RZ:
             RZ_conjugation_device(num_qubits, gate_qubits, angle, pauli_word, coeff, extra_pauli_word, extra_coeff);
-            extra_coeff = cuCmul(old_coeff, extra_coeff);
             break;
         default:
             break;
     }
-    coeff = cuCmul(old_coeff, coeff);
 }
