@@ -65,7 +65,6 @@ int main(int argc, char *argv[])
     // You'll need to modify run_all_tests() to accept the runGPU parameter
     // For now, I'll assume you'll update your test functions to use this flag
     run_all_tests(runGPU);
-    // run_single_test(19, runGPU);
 
     std::cout << "========================================\n";
     std::cout << "   ALL TESTS COMPLETED\n";

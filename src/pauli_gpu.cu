@@ -13,9 +13,9 @@ GET GATE QUBITS
 #include <iostream>
 #include <cstring>
 
-#define THREADS_PER_BLOCK 256
-#define MAX_PAULI_WORDS (THREADS_PER_BLOCK * 4)
-#define MAX_QUBITS 4
+#define THREADS_PER_BLOCK 128
+#define MAX_PAULI_WORDS (THREADS_PER_BLOCK * 10)
+#define MAX_QUBITS 10
 #define SHARED_BYTES_PER_BLOCK (MAX_PAULI_WORDS * MAX_QUBITS)
 #define SCAN_BLOCK_DIM THREADS_PER_BLOCK
 #include "exclusiveScan.cu_inl"
@@ -323,6 +323,10 @@ void PauliSimulatorGPU::allocatePauliWords(const std::map<PauliWord, Complex> &o
         d_coeffs = nullptr;
         return;
     }
+    if (num_words > MAX_PAULI_WORDS / 2) {
+        std::cerr << "Can only have " << MAX_PAULI_WORDS / 2 
+        << "pauli words" << std::endl;
+    }
     
     // Allocate device memory for Pauli words (1 byte per qubit per word)
     size_t pauli_words_size = MAX_PAULI_WORDS * num_qubits * sizeof(Pauli);
@@ -419,8 +423,9 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
 
     // Configure kernel launch parameters
     int blockSize = THREADS_PER_BLOCK;                       // Threads per block
-    int numBlocks = (num_words + blockSize - 1) / blockSize; // Ceiling division
-    if (numBlocks > 1) {
+    int numBlocks = 1; // Ceiling division
+    if ((num_words + blockSize - 1) / blockSize > numBlocks)
+    {
         std::cerr << "can only launch with 1 thread block" << std::endl;
         return Complex(0.0, 0.0);
     }
