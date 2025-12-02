@@ -71,13 +71,13 @@ keep(int max_weight, Pauli *pauli_word, cuDoubleComplex &phase) {
 
 // len(flags) = SCAN_BLOCK_DIM
 __device__ __inline__ void
-createFlags(int local_id, uint *flags, Pauli *pauli_words, cuDoubleComplex *coeffs, int max_weight, int start_idx)
+createFlags(int local_id, uint16_t *flags, Pauli *pauli_words, cuDoubleComplex *coeffs, int max_weight, int start_idx)
 {
     for (int i = local_id; i < SCAN_BLOCK_DIM - 1; i += THREADS_PER_BLOCK)
     {
         if (i + start_idx < MAX_PAULI_WORDS) {
             int g_idx = (i + start_idx) * cuPauliPropConst.num_qubits;
-            flags[i] = (uint) keep(max_weight, &pauli_words[g_idx], coeffs[i + start_idx]);
+            flags[i] = (uint16_t) keep(max_weight, &pauli_words[g_idx], coeffs[i + start_idx]);
         } else {
             flags[i] = 0;
         }
@@ -92,7 +92,7 @@ createFlags(int local_id, uint *flags, Pauli *pauli_words, cuDoubleComplex *coef
 
 
 __device__ __inline__ int
-organizeIdxs(int local_id, uint *old_idxs, int old_start_idx, uint *prefixSumOutput)
+organizeIdxs(int local_id, uint16_t *old_idxs, int old_start_idx, uint16_t *prefixSumOutput)
 {
     for (int i = local_id; i < SCAN_BLOCK_DIM - 1; i += THREADS_PER_BLOCK)
     {
@@ -105,7 +105,7 @@ organizeIdxs(int local_id, uint *old_idxs, int old_start_idx, uint *prefixSumOut
 }
 
 __device__ __inline__ void
-loadSharedMemeory(int local_id, int num_qubits, int new_start, uint *old_idxs, int length, 
+loadSharedMemeory(int local_id, int num_qubits, int new_start, uint16_t *old_idxs, int length, 
                   Pauli *pauli_words, cuDoubleComplex *coeffs)
 {
     for (int i = local_id; i < length; i += THREADS_PER_BLOCK)
@@ -137,7 +137,7 @@ loadSharedMemeory(int local_id, int num_qubits, int new_start, uint *old_idxs, i
 //  - The 3 arrays should be in shared memory.
 __device__ __inline__ int
 cleanup(int local_id, int num_qubits, int max_weight, Pauli *pauli_words, cuDoubleComplex *phases,
-        uint *prefixSumInput, uint *prefixSumOutput, uint *prefixSumScratch)
+        uint16_t *prefixSumInput, uint16_t *prefixSumOutput, uint16_t *prefixSumScratch)
 {
     int num_words = 0;
     for (int seen_words = 0; seen_words < MAX_PAULI_WORDS; seen_words += SCAN_BLOCK_DIM - 1)
@@ -190,9 +190,9 @@ __global__ void pauli_propagation_kernel(int max_weight)
 {
     __shared__ Pauli pauli_words[SHARED_BYTES_PER_BLOCK];
     __shared__ cuDoubleComplex coeffs[MAX_PAULI_WORDS];
-    __shared__ uint prefixSumInput[SCAN_BLOCK_DIM];
-    __shared__ uint prefixSumOutput[SCAN_BLOCK_DIM];
-    __shared__ uint prefixSumScratch[SCAN_BLOCK_DIM * 2];
+    __shared__ uint16_t prefixSumInput[SCAN_BLOCK_DIM];
+    __shared__ uint16_t prefixSumOutput[SCAN_BLOCK_DIM];
+    __shared__ uint16_t prefixSumScratch[SCAN_BLOCK_DIM * 2];
 
     int local_id = threadIdx.x;
     int num_qubits = cuPauliPropConst.num_qubits;
