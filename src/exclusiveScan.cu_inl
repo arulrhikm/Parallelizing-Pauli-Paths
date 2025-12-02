@@ -38,9 +38,9 @@
 
 // int linearThreadIndex =  threadIdx.y * blockDim.y + threadIdx.x;
 
-// __shared__ uint prefixSumInput[BLOCKSIZE];
-// __shared__ uint prefixSumOutput[BLOCKSIZE];
-// __shared__ uint prefixSumScratch[2 * BLOCKSIZE];
+// __shared__ uint16_t prefixSumInput[BLOCKSIZE];
+// __shared__ uint16_t prefixSumOutput[BLOCKSIZE];
+// __shared__ uint16_t prefixSumScratch[2 * BLOCKSIZE];
 // sharedMemExclusiveScan(linearThreadIndex, prefixSumInput, prefixSumOutput, prefixSumScratch, BLOCKSIZE);
 
 
@@ -49,36 +49,36 @@
 
 //Almost the same as naive scan1Inclusive, but doesn't need __syncthreads()
 //assuming size <= WARP_SIZE
-inline __device__ uint
-warpScanInclusive(int threadIndex, uint idata, volatile uint *s_Data, uint size){
+inline __device__ uint16_t
+warpScanInclusive(int threadIndex, uint16_t idata, volatile uint16_t *s_Data, uint16_t size){
     // Note some of the calculations are obscure because they are optimized.
     // For example, (threadIndex & (size - 1)) computes threadIndex % size,
     // which works, assuming size is a power of 2.
 
-    uint pos = 2 * threadIndex - (threadIndex & (size - 1));
+    uint16_t pos = 2 * threadIndex - (threadIndex & (size - 1));
     s_Data[pos] = 0;
     pos += size;
     s_Data[pos] = idata;
 
-    for(uint offset = 1; offset < size; offset <<= 1)
+    for(uint16_t offset = 1; offset < size; offset <<= 1)
         s_Data[pos] += s_Data[pos - offset];
 
     return s_Data[pos];
 }
 
-inline __device__ uint warpScanExclusive(int threadIndex, uint idata, volatile uint *sScratch, uint size){
+inline __device__ uint16_t warpScanExclusive(int threadIndex, uint16_t idata, volatile uint16_t *sScratch, uint16_t size){
     return warpScanInclusive(threadIndex, idata, sScratch, size) - idata;
 }
 
 __inline__ __device__ void
-sharedMemExclusiveScan(int threadIndex, uint* sInput, uint* sOutput, volatile uint* sScratch, uint size)
+sharedMemExclusiveScan(int threadIndex, uint16_t* sInput, uint16_t* sOutput, volatile uint16_t* sScratch, uint16_t size)
 {
     if (size > WARP_SIZE) {
 
-        uint idata = sInput[threadIndex];
+        uint16_t idata = sInput[threadIndex];
 
         //Bottom-level inclusive warp scan
-        uint warpResult = warpScanInclusive(threadIndex, idata, sScratch, WARP_SIZE);
+        uint16_t warpResult = warpScanInclusive(threadIndex, idata, sScratch, WARP_SIZE);
 
         // Save top elements of each warp for exclusive warp scan sync
         // to wait for warp scans to complete (because s_Data is being
@@ -93,7 +93,7 @@ sharedMemExclusiveScan(int threadIndex, uint* sInput, uint* sOutput, volatile ui
 
         if ( threadIndex < (SCAN_BLOCK_DIM / WARP_SIZE)) {
             // grab top warp elements
-            uint val = sScratch[threadIndex];
+            uint16_t val = sScratch[threadIndex];
             // calculate exclusive scan and write back to shared memory
             sScratch[threadIndex] = warpScanExclusive(threadIndex, val, sScratch, size >> LOG2_WARP_SIZE);
         }
@@ -104,7 +104,7 @@ sharedMemExclusiveScan(int threadIndex, uint* sInput, uint* sOutput, volatile ui
         sOutput[threadIndex] = warpResult + sScratch[threadIndex >> LOG2_WARP_SIZE] - idata;
 
     } else if (threadIndex < WARP_SIZE) {
-        uint idata = sInput[threadIndex];
+        uint16_t idata = sInput[threadIndex];
         sOutput[threadIndex] = warpScanExclusive(threadIndex, idata, sScratch, size);
     }
 }

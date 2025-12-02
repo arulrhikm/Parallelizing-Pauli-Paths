@@ -1,6 +1,7 @@
 #include "pauli.h"
 #include "pauli_gpu.h"
 #include "tests.h"
+#include "CycleTimer.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -323,13 +324,15 @@ static vector<TestCase> create_test_cases()
                          1e-6});
     }
 
-    // Heavy Test A: Random sparse Pauli ensemble on many qubits (increased size)
+    // Heavy Test A: Random sparse Pauli ensemble - tests parallel processing of many Pauli words
+    // Rationale: Large initial observable size stresses the parallelization of gate applications
+    // Target: 6-9 seconds (many words × moderate gates)
     {
-        int nq = 26; // increased qubit count
+        int nq = 28;
         std::map<PauliWord, Complex> obs;
         std::mt19937_64 rng(123456789);
         std::uniform_int_distribution<int> opdis(0, 3); // 0 -> I, 1->X,2->Y,3->Z
-        int num_words = 2097152; // 2M words
+        int num_words = 2500000; // 2.5M words - heavy parallel processing load
         for (int w = 0; w < num_words; ++w)
         {
             PauliWord pw(nq);
@@ -347,13 +350,15 @@ static vector<TestCase> create_test_cases()
             obs[pw] += Complex(1.0, 0.0);
         }
 
-        // Construct a deep circuit mixing many single-qubit rotations and two-qubit CNOT layers
+        // Moderate depth circuit with rotation gates that cause Pauli word expansion
         vector<Gate> circ;
-        for (int layer = 0; layer < 250000; ++layer) // 250k layers
+        for (int layer = 0; layer < 3000; ++layer)
         {
+            // Rotations cause expansion (each rotation can double Pauli words)
             for (int q = 0; q < nq; ++q)
-                circ.push_back(Gate(RZ, {q}, 0.005 * (layer + 1)));
+                circ.push_back(Gate(RZ, {q}, 0.01 * (layer + 1)));
 
+            // CNOTs entangle qubits
             for (int q = 0; q + 1 < nq; q += 2)
                 circ.push_back(Gate(CNOT, {q, q + 1}));
 
@@ -361,51 +366,24 @@ static vector<TestCase> create_test_cases()
                 circ.push_back(Gate(CNOT, {q, q + 1}));
         }
 
-        tests.push_back({"HEAVY A: random sparse 26-qubit (2M words), 250k layers",
+        tests.push_back({"HEAVY A: 28-qubit, 2.5M words, 3K layers (many Pauli words)",
                  nq,
                  obs,
                  circ,
                  Complex(0.0, 0.0),
                  1e9,
-                 400});
+                 1});
     }
 
-    // Heavy Test B: Dense long Pauli word with alternating Hadamard/CNOT layers (increased size)
+    // Heavy Test B: Deep circuit with many layers - tests gate application throughput
+    // Rationale: Many gates on moderate number of Pauli words stresses gate iteration performance
+    // Target: 1-3 seconds (moderate words × very many gates)
     {
-        int nq = 30; // increased qubit count
+        int nq = 30;
         std::map<PauliWord, Complex> obs;
-        PauliWord dense(nq);
-        for (int q = 0; q < nq; ++q)
-            dense.ops[q] = X; // start with X on every qubit
-        obs[dense] = Complex(1.0, 0.0);
-
-        vector<Gate> circ;
-        // Alternate many layers that cause Pauli-frame splitting on the CPU
-        for (int layer = 0; layer < 75000; ++layer) // 75k layers target ~1-3 min
-        {
-            for (int q = 0; q < nq; ++q)
-                circ.push_back(Gate(HADAMARD, {q}));
-
-            for (int q = 0; q + 1 < nq; ++q)
-                circ.push_back(Gate(CNOT, {q, q + 1}));
-        }
-
-        tests.push_back({"HEAVY B: dense 30-qubit X word, alternating H+CNOT (12k layers)",
-                 nq,
-                 obs,
-                 circ,
-                 Complex(0.0, 0.0),
-                 1e9,
-                 400});
-    }
-
-    // Heavy Test C: larger random ensemble to push runtime/memory
-    {
-        int nq = 28;
-        std::map<PauliWord, Complex> obs;
-        std::mt19937_64 rng(987654321);
+        std::mt19937_64 rng(222222);
         std::uniform_int_distribution<int> opdis(0, 3);
-        int num_words = 1572864; // ~1.5M words target ~1-3 min
+        int num_words = 1500000; // 1.5M words with deep circuit
         for (int w = 0; w < num_words; ++w)
         {
             PauliWord pw(nq);
@@ -424,38 +402,9 @@ static vector<TestCase> create_test_cases()
         }
 
         vector<Gate> circ;
-        for (int layer = 0; layer < 50000; ++layer) // 50k layers target ~1-3 min
-        {
-            for (int q = 0; q < nq; ++q)
-                circ.push_back(Gate(RZ, {q}, 0.007 * (layer + 1)));
-
-            for (int q = 0; q + 2 < nq; q += 3)
-            {
-                circ.push_back(Gate(CNOT, {q, q + 1}));
-                circ.push_back(Gate(CNOT, {q + 1, q + 2}));
-            }
-        }
-
-        tests.push_back({"HEAVY C: random 28-qubit (1.5M words), 9k layers",
-                 nq,
-                 obs,
-                 circ,
-                 Complex(0.0, 0.0),
-                 1e9,
-                 300});
-    }
-
-    // Heavy Test D: very deep alternating H/CNOT on many qubits (dense splitting)
-    {
-        int nq = 30;
-        std::map<PauliWord, Complex> obs;
-        PauliWord dense(nq);
-        for (int q = 0; q < nq; ++q)
-            dense.ops[q] = X;
-        obs[dense] = Complex(1.0, 0.0);
-
-        vector<Gate> circ;
-        for (int layer = 0; layer < 66000; ++layer) // 66k layers target ~1-3 min
+        // Very deep circuit with Clifford gates (don't cause exponential expansion)
+        // This tests gate application speed rather than Pauli word explosion
+        for (int layer = 0; layer < 100000; ++layer)
         {
             for (int q = 0; q < nq; ++q)
                 circ.push_back(Gate(HADAMARD, {q}));
@@ -464,21 +413,181 @@ static vector<TestCase> create_test_cases()
                 circ.push_back(Gate(CNOT, {q, q + 1}));
         }
 
-        tests.push_back({"HEAVY D: dense 30-qubit X word, alternating H+CNOT (11k layers)",
+        tests.push_back({"HEAVY B: 30-qubit, 1.5M words, 100K layers H+CNOT (deep circuit)",
                  nq,
                  obs,
                  circ,
                  Complex(0.0, 0.0),
                  1e9,
-                 200});
+                 1});
+    }
+
+    // Heavy Test C: Mixed rotations and entanglement - tests Pauli word expansion handling
+    // Rationale: Rotation gates cause exponential expansion, truncation to max_weight is critical
+    // Target: 1-3 seconds (moderate words × many rotation gates → expansion stress)
+    {
+        int nq = 30;
+        std::map<PauliWord, Complex> obs;
+        std::mt19937_64 rng(987654321);
+        std::uniform_int_distribution<int> opdis(0, 3);
+        int num_words = 2000000; // Start with 2M words
+        for (int w = 0; w < num_words; ++w)
+        {
+            PauliWord pw(nq);
+            for (int q = 0; q < nq; ++q)
+            {
+                int od = opdis(rng);
+                if (od == 0) continue;
+                if (od == 1)
+                    pw.ops[q] = X;
+                else if (od == 2)
+                    pw.ops[q] = Y;
+                else
+                    pw.ops[q] = Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+
+        vector<Gate> circ;
+        // Many layers with rotations that cause expansion
+        for (int layer = 0; layer < 4000; ++layer)
+        {
+            // Rotations cause Pauli word doubling
+            for (int q = 0; q < nq; ++q)
+                circ.push_back(Gate(RZ, {q}, 0.01 * (layer + 1)));
+
+            // CNOTs spread operators across qubits
+            for (int q = 0; q + 2 < nq; q += 3)
+            {
+                circ.push_back(Gate(CNOT, {q, q + 1}));
+                circ.push_back(Gate(CNOT, {q + 1, q + 2}));
+            }
+        }
+
+        tests.push_back({"HEAVY C: 30-qubit, 2M words, 4K layers RZ+CNOT (expansion test)",
+                 nq,
+                 obs,
+                 circ,
+                 Complex(0.0, 0.0),
+                 1e9,
+                 1});
+    }
+
+    // Heavy Test D: Balanced workload - tests overall system performance
+    // Rationale: Moderate words, moderate depth, mixed gates - realistic quantum circuit
+    // Target: 3-6 seconds (balanced: many words × many gates × mixed types)
+    {
+        int nq = 30;
+        std::map<PauliWord, Complex> obs;
+        std::mt19937_64 rng(555555);
+        std::uniform_int_distribution<int> opdis(0, 3);
+        int num_words = 3000000; // 3M words
+        for (int w = 0; w < num_words; ++w)
+        {
+            PauliWord pw(nq);
+            for (int q = 0; q < nq; ++q)
+            {
+                int od = opdis(rng);
+                if (od == 0) continue;
+                if (od == 1)
+                    pw.ops[q] = X;
+                else if (od == 2)
+                    pw.ops[q] = Y;
+                else
+                    pw.ops[q] = Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+
+        vector<Gate> circ;
+        // Realistic quantum circuit with mixed gate types
+        for (int layer = 0; layer < 5000; ++layer)
+        {
+            // Mix of Clifford and rotation gates
+            for (int q = 0; q < nq; q += 2)
+                circ.push_back(Gate(HADAMARD, {q}));
+            
+            for (int q = 1; q < nq; q += 2)
+                circ.push_back(Gate(RZ, {q}, 0.02 * layer));
+
+            for (int q = 0; q + 1 < nq; ++q)
+                circ.push_back(Gate(CNOT, {q, q + 1}));
+        }
+
+        tests.push_back({"HEAVY D: 30-qubit, 3M words, 5K layers mixed gates (balanced)",
+                 nq,
+                 obs,
+                 circ,
+                 Complex(0.0, 0.0),
+                 1e9,
+                 1});
+    }
+
+    // Heavy Test E: Extreme stress test - pushes system to limits
+    // Rationale: Maximum realistic workload to demonstrate GPU's full advantage
+    // Target: 6-9 seconds (extreme: massive words × deep circuit × heavy expansion)
+    {
+        int nq = 32;
+        std::map<PauliWord, Complex> obs;
+        std::mt19937_64 rng(777777);
+        std::uniform_int_distribution<int> opdis(0, 3);
+        int num_words = 4000000; // 4M words - extreme parallel load
+        for (int w = 0; w < num_words; ++w)
+        {
+            PauliWord pw(nq);
+            for (int q = 0; q < nq; ++q)
+            {
+                int od = opdis(rng);
+                if (od == 0) continue;
+                if (od == 1)
+                    pw.ops[q] = X;
+                else if (od == 2)
+                    pw.ops[q] = Y;
+                else
+                    pw.ops[q] = Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+
+        vector<Gate> circ;
+        // Extreme depth with all gate types
+        for (int layer = 0; layer < 6000; ++layer)
+        {
+            // Heavy rotation layer (causes expansion)
+            for (int q = 0; q < nq; q += 3)
+                circ.push_back(Gate(RZ, {q}, 0.015 * layer));
+            
+            for (int q = 1; q < nq; q += 3)
+                circ.push_back(Gate(RX, {q}, 0.012 * layer));
+            
+            for (int q = 2; q < nq; q += 3)
+                circ.push_back(Gate(RY, {q}, 0.018 * layer));
+
+            // Clifford layer for mixing
+            for (int q = 0; q < nq; q += 2)
+                circ.push_back(Gate(HADAMARD, {q}));
+
+            // Dense entanglement
+            for (int q = 0; q + 1 < nq; ++q)
+                circ.push_back(Gate(CNOT, {q, q + 1}));
+        }
+
+        tests.push_back({"HEAVY E: 32-qubit, 4M words, 6K layers all gates (EXTREME)",
+                 nq,
+                 obs,
+                 circ,
+                 Complex(0.0, 0.0),
+                 1e9,
+                 1});
     }
 
     return tests;
 }
 
-bool run_single_test(const TestCase &test, int i, bool use_gpu)
+double run_single_test(const TestCase &test, int i, bool use_gpu)
 {
     cout << "=== " << i + 1 << ". " << test.name << " ===\n";
+    double computeTime = 0.0;
 
     auto tstart = chrono::steady_clock::now();
 
@@ -487,7 +596,11 @@ bool run_single_test(const TestCase &test, int i, bool use_gpu)
     {
         #ifndef CPU_ONLY
         PauliSimulatorGPU simulator(test.num_qubits, test.initial_obs, test.circuit);
+
+        double startComputeTime = CycleTimer::currentSeconds();
         result = simulator.runPropagation(10);
+        double endComputeTime = CycleTimer::currentSeconds();
+        computeTime = endComputeTime - startComputeTime;
         #else
         cout << "GPU not available, using CPU instead\n";
         result = pauli_propagation(test.initial_obs, test.circuit, 10);
@@ -495,26 +608,30 @@ bool run_single_test(const TestCase &test, int i, bool use_gpu)
     }
     else
     {
+        double startComputeTime = CycleTimer::currentSeconds();
         result = pauli_propagation(test.initial_obs, test.circuit, 10);
+        double endComputeTime = CycleTimer::currentSeconds();
+        computeTime = endComputeTime - startComputeTime;
     }
 
     bool passed = abs(result - test.expected_result) < test.tolerance;
 
     if (passed)
     {
-        cout << "\033[92m" << "Status: PASS"  << "\033[0m" << "\n\n";
+        cout << "\033[92m" << "Status: PASS" << "\033[0m" << "\n\n";
     } else {
         cout << "\033[31m" << "Status: FAIL" << "\033[0m" << "\n";
         cout << "Result: " << result << "\n";
         cout << "Expected: " << test.expected_result << "\n\n";
+        computeTime = -1.0;
     }
     auto tend = chrono::steady_clock::now();
     double elapsed = chrono::duration_cast<chrono::duration<double>>(tend - tstart).count();
     cout << "Elapsed time: " << fixed << setprecision(3) << elapsed << " s\n\n";
-    return passed;
+    return computeTime;
 }
 
-bool run_single_test(int i, bool use_gpu)
+double run_single_test(int i, bool use_gpu)
 {
     auto test_cases = create_test_cases();
     return run_single_test(test_cases[i], i, use_gpu);
@@ -526,6 +643,9 @@ void run_all_tests(bool use_gpu)
     int total_tests = test_cases.size();
     int passed_tests = 0;
 
+    // Vector to store computation times
+    vector<double> compute_times_ms(total_tests, 0.0);
+
     cout << "Running " << total_tests << " tests using "
          << (use_gpu ? "GPU" : "CPU") << " simulator\n";
     cout << "========================================\n\n";
@@ -533,15 +653,43 @@ void run_all_tests(bool use_gpu)
     int i = 0;
     for (const auto &test : test_cases)
     {
-        if (run_single_test(test, i, use_gpu))
+
+
+        // Run the test and get computation time
+        double compute_time = run_single_test(test, i, use_gpu);
+        double compute_time_ms = compute_time * 1000.0; // Convert to milliseconds
+
+        compute_times_ms[i] = compute_time_ms;
+
+        // Determine status based on compute_time
+        bool passed = (compute_time >= 0.0);
+
+        if (passed)
         {
             passed_tests++;
         }
+
         i++;
     }
+    // First, run all tests and collect timing information
+    cout << "TEST TIMING RESULTS:\n";
+    cout << "=========================================================\n";
+    cout << left << setw(4) << "No."
+         << left << setw(40) << "Test Name"
+         << right << setw(12) << "Time (ms)" << "\n";
+    cout << "---------------------------------------------------------\n";
 
-    cout << "========================================\n";
-    cout << "OVERALL RESULTS:\n";
+    for (size_t i = 0; i < (compute_times_ms.size()); i++) {
+        cout << left << setw(4) << i + 1
+             << left << setw(40) << test_cases[i].name.substr(0, 39);
+
+        // Print time and status
+        cout << right << setw(12) << fixed << setprecision(3) << compute_times_ms[i] << "\n";
+    }
+
+    
+    cout << "=========================================================\n";
+    cout << "CORRECTNESS RESULTS:\n";
     cout << "Passed: " << passed_tests << "/" << total_tests << "\n";
     cout << "Failed: " << (total_tests - passed_tests) << "/" << total_tests << "\n";
     cout << "Success Rate: " << fixed << setprecision(1)

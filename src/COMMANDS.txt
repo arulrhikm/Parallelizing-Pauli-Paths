@@ -2,33 +2,21 @@
 PAULI PROPAGATION - HOW TO RUN
 ====================================
 
-QUICK START
------------
-If already compiled (Windows PowerShell):
-    .\pauli_sim.exe -d cpu
-    .\diagnostic.exe
-
-
-BUILD FROM SCRATCH
-------------------
-Compile everything (PowerShell):
+COMPILE AND RUN: tests.cpp
+---------------------------
+Compile (PowerShell):
     g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/pauli.cpp src/main.cpp src/tests.cpp -Isrc -o pauli_sim.exe
 
-Build diagnostic tool:
-    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic.exe
-
-Alternative: use provided scripts in repository root:
-    .\build_run_pauli.ps1       # build and run the main pauli simulator
-    .\build_run_diagnostic.ps1  # build and run the diagnostic tool
-    .\build_run_tests.ps1       # build and run tests (supports single-test index)
-
-
-RUN TESTS
-Run all tests (via script):
-    .\build_run_tests.ps1
+Run all tests:
+    .\pauli_sim.exe -d cpu
 
 Run a single test (index N, 1-based):
-    .\build_run_tests.ps1 -Index 23
+    .\pauli_sim.exe -d cpu -i N
+
+Alternative (via script):
+    .\build_run_tests.ps1              # build and run all tests
+    .\build_run_tests.ps1 -Index N      # build and run single test (1-based index)
+
 The tests check:
 - Basic Clifford gates (H, CNOT, S, T)
 - Rotation gates (RX, RY, RZ)
@@ -36,15 +24,41 @@ The tests check:
 - Deep layered circuits
 
 
-RUN DIAGNOSTIC
---------------
-See Pauli word expansion in action (script):
-    .\build_run_diagnostic.ps1
+COMPILE AND RUN: diagnostic.cpp
+--------------------------------
+Compile (PowerShell):
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic.exe
+
+Run:
+    .\diagnostic.exe
+
+Alternative (via script):
+    .\build_run_diagnostic.ps1          # build and run diagnostic tool
 
 This shows how:
 - Clifford gates keep Pauli word count constant
 - Rotation gates cause Pauli word expansion
 - Multiple rotations lead to exponential growth
+
+
+COMPILE: pauli.cpp
+-------------------
+Note: pauli.cpp is a library file (no main function) and cannot be run standalone.
+It must be compiled together with other source files that provide main().
+
+Compile as object file (PowerShell):
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 -c src/pauli.cpp -Isrc -o pauli.o
+
+Or compile together with other files (see tests.cpp and diagnostic.cpp sections above).
+
+
+QUICK START (If Already Compiled)
+----------------------------------
+Run tests:
+    .\pauli_sim.exe -d cpu
+
+Run diagnostic:
+    .\diagnostic.exe
 
 
 CLEAN UP
@@ -58,6 +72,7 @@ Remove executables (PowerShell):
 NOTES
 -----
 - The -DCPU_ONLY flag compiles without GPU support
-- All executables are in the src/ directory
+- All executables are created in the repository root directory
 - Tests should pass with 100% success rate
+- pauli.cpp is a library and requires linking with files that have main() functions
 

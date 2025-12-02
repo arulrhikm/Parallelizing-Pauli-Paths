@@ -11,9 +11,9 @@ PAULIWORDS_PER_THREAD = 1
 # this is the funkiest parameter, on the one hand want lots of pauli words on the other hand a 
 # little misleading as the pauli words will start low and hopeful not grow that quickly
 # idk??
-SIZE_PAULI = 1 # could be .25 fairly easily (just pack multiple enums into single byte)
-SIZE_COMPLEX = 16 #could be 8 at the expense of accurancy
-SIZE_PREFIX_IDX = 4 #could probably be 2 if I just changed the exclusiveScan file
+SIZE_PAULI = 1  # could be .25 fairly easily (just pack multiple enums into single byte)
+SIZE_COMPLEX = 16  # could be 8 at the expense of accurancy
+SIZE_PREFIX_IDX = 2  # could probably be 2 if I just changed the exclusiveScan file
 
 # -----------------------------
 # Helper: format bytes nicely
