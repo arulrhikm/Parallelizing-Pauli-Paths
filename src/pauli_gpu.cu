@@ -139,6 +139,7 @@ __device__ __inline__ int
 cleanup(int local_id, int num_qubits, int max_weight, Pauli *pauli_words, cuDoubleComplex *phases,
         uint16_t *prefixSumInput, uint16_t *prefixSumOutput, uint16_t *prefixSumScratch)
 {
+    __syncthreads();
     int num_words = 0;
     for (int seen_words = 0; seen_words < MAX_PAULI_WORDS; seen_words += SCAN_BLOCK_DIM - 1)
     {
@@ -197,7 +198,6 @@ __global__ void pauli_propagation_kernel(int max_weight)
     int local_id = threadIdx.x;
     int num_qubits = cuPauliPropConst.num_qubits;
     int num_words = cuPauliPropConst.num_words;
-    // probably need to zero out or smth
     // must have half the number of bytes allowed incase every gate duplicates
     int max_words = MAX_PAULI_WORDS / 2;
 
@@ -230,13 +230,15 @@ __global__ void pauli_propagation_kernel(int max_weight)
                               &pauli_words[g_i], coeffs[i],
                               &pauli_words[g_extra_i], coeffs[extra_i]);
         }
-        __syncthreads();
-        num_words = cleanup(local_id, num_qubits, max_weight, pauli_words, coeffs, 
+
+        num_words = cleanup(local_id, num_qubits, max_weight, pauli_words, coeffs,
                             prefixSumInput, prefixSumOutput, prefixSumScratch);
+
+
         //printPauliWords(local_id, num_qubits, 2, pauli_words, coeffs);
         if (local_id == 0 && num_words > max_words) {
-            printf("WE ARE SOOOO FUCKED\n");
-            return;
+            printf("STOP EVERYTHING\n");
+            gate_idx = 0;
         }
 
         //printPauliWords(local_id, num_qubits, 2, pauli_words, coeffs);
@@ -248,6 +250,8 @@ __global__ void pauli_propagation_kernel(int max_weight)
         cuPauliPropConst.result[0] = result.x;
         cuPauliPropConst.result[1] = result.y;
     }
+    // cuPauliPropConst.result[0] = 0.0;
+    // cuPauliPropConst.result[1] = 0.0;
 }
 
 /**
@@ -430,9 +434,9 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
         return Complex(0.0, 0.0);
     }
 
-    std::cout << "Launching GPU kernel with " << numBlocks << " blocks, "
-              << blockSize << " threads per block" << std::endl;
-    std::cout << "Processing " << num_words << " Pauli words" << std::endl;
+    // std::cout << "Launching GPU kernel with " << numBlocks << " blocks, "
+    //           << blockSize << " threads per block" << std::endl;
+    // std::cout << "Processing " << num_words << " Pauli words" << std::endl;
 
     // Launch the kernel
     pauli_propagation_kernel<<<numBlocks, blockSize>>>(max_weight);
@@ -456,7 +460,7 @@ Complex PauliSimulatorGPU::runPropagation(int max_weight)
         return Complex(0.0, 0.0);
     }
 
-    std::cout << "GPU kernel completed successfully"<< std::endl;
+    // std::cout << "GPU kernel completed successfully"<< std::endl;
 
     // TODO: You'll need to add code here to:
     // 1. Copy results back from device to host

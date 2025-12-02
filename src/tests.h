@@ -16,8 +16,8 @@ struct TestCase
     double tolerance;
 };
 
-bool run_single_test(const TestCase &test, int i, bool use_gpu);
-bool run_single_test(int i, bool use_gpu);
+double run_single_test(const TestCase &test, int i, bool use_gpu);
+double run_single_test(int i, bool use_gpu);
 void run_all_tests(bool use_gpu = true);
 
 #endif

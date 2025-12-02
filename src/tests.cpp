@@ -1,6 +1,7 @@
 #include "pauli.h"
 #include "pauli_gpu.h"
 #include "tests.h"
+#include "CycleTimer.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -324,16 +325,21 @@ static vector<TestCase> create_test_cases()
     return tests;
 }
 
-bool run_single_test(const TestCase &test, int i, bool use_gpu)
+double run_single_test(const TestCase &test, int i, bool use_gpu)
 {
     cout << "=== " << i + 1 << ". " << test.name << " ===\n";
+    double computeTime = 0.0;
 
     Complex result;
     if (use_gpu)
     {
         #ifndef CPU_ONLY
         PauliSimulatorGPU simulator(test.num_qubits, test.initial_obs, test.circuit);
+
+        double startComputeTime = CycleTimer::currentSeconds();
         result = simulator.runPropagation(10);
+        double endComputeTime = CycleTimer::currentSeconds();
+        computeTime = endComputeTime - startComputeTime;
         #else
         cout << "GPU not available, using CPU instead\n";
         result = pauli_propagation(test.initial_obs, test.circuit, 10);
@@ -341,23 +347,27 @@ bool run_single_test(const TestCase &test, int i, bool use_gpu)
     }
     else
     {
+        double startComputeTime = CycleTimer::currentSeconds();
         result = pauli_propagation(test.initial_obs, test.circuit, 10);
+        double endComputeTime = CycleTimer::currentSeconds();
+        computeTime = endComputeTime - startComputeTime;
     }
 
     bool passed = abs(result - test.expected_result) < test.tolerance;
 
     if (passed)
     {
-        cout << "\033[92m" << "Status: PASS"  << "\033[0m" << "\n\n";
+        cout << "\033[92m" << "Status: PASS" << "\033[0m" << "\n\n";
     } else {
         cout << "\033[31m" << "Status: FAIL" << "\033[0m" << "\n";
         cout << "Result: " << result << "\n";
         cout << "Expected: " << test.expected_result << "\n\n";
+        computeTime = -1.0;
     }
-    return passed;
+    return computeTime;
 }
 
-bool run_single_test(int i, bool use_gpu)
+double run_single_test(int i, bool use_gpu)
 {
     auto test_cases = create_test_cases();
     return run_single_test(test_cases[i], i, use_gpu);
@@ -369,6 +379,9 @@ void run_all_tests(bool use_gpu)
     int total_tests = test_cases.size();
     int passed_tests = 0;
 
+    // Vector to store computation times
+    vector<double> compute_times_ms(total_tests, 0.0);
+
     cout << "Running " << total_tests << " tests using "
          << (use_gpu ? "GPU" : "CPU") << " simulator\n";
     cout << "========================================\n\n";
@@ -376,19 +389,46 @@ void run_all_tests(bool use_gpu)
     int i = 0;
     for (const auto &test : test_cases)
     {
-        if (run_single_test(test, i, use_gpu))
+
+
+        // Run the test and get computation time
+        double compute_time = run_single_test(test, i, use_gpu);
+        double compute_time_ms = compute_time * 1000.0; // Convert to milliseconds
+
+        compute_times_ms[i] = compute_time_ms;
+
+        // Determine status based on compute_time
+        bool passed = (compute_time >= 0.0);
+
+        if (passed)
         {
             passed_tests++;
         }
+
         i++;
     }
+    // First, run all tests and collect timing information
+    cout << "TEST TIMING RESULTS:\n";
+    cout << "=========================================================\n";
+    cout << left << setw(4) << "No."
+         << left << setw(40) << "Test Name"
+         << right << setw(12) << "Time (ms)" << "\n";
+    cout << "---------------------------------------------------------\n";
 
-    cout << "========================================\n";
-    cout << "OVERALL RESULTS:\n";
+    for (size_t i = 0; i < (compute_times_ms.size()); i++) {
+        cout << left << setw(4) << i + 1
+             << left << setw(40) << test_cases[i].name.substr(0, 39);
+
+        // Print time and status
+        cout << right << setw(12) << fixed << setprecision(3) << compute_times_ms[i] << "\n";
+    }
+
+    
+    cout << "=========================================================\n";
+    cout << "CORRECTNESS RESULTS:\n";
     cout << "Passed: " << passed_tests << "/" << total_tests << "\n";
     cout << "Failed: " << (total_tests - passed_tests) << "/" << total_tests << "\n";
     cout << "Success Rate: " << fixed << setprecision(1)
          << (100.0 * passed_tests / total_tests) << "%\n";
     cout << setprecision(6);
 }
-
