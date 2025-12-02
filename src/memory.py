@@ -3,11 +3,11 @@
 # -----------------------------
 # Parameter Definitions
 # -----------------------------
-THREADS_PER_BLOCK = 128
+THREADS_PER_BLOCK = 512
 # would like to pump this up to like a thoushand
-NUM_QUBITS = 10
+NUM_QUBITS = 20
 # kinda low :(
-PAULIWORDS_PER_THREAD = 10
+PAULIWORDS_PER_THREAD = 1
 # this is the funkiest parameter, on the one hand want lots of pauli words on the other hand a 
 # little misleading as the pauli words will start low and hopeful not grow that quickly
 # idk??
