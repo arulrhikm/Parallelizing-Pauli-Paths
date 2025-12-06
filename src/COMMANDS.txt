@@ -1,78 +1,283 @@
 ====================================
-PAULI PROPAGATION - HOW TO RUN
+PAULI PROPAGATION - HOW TO COMPILE AND RUN
 ====================================
 
-COMPILE AND RUN: tests.cpp
----------------------------
-Compile (PowerShell):
-    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/pauli.cpp src/main.cpp src/tests.cpp -Isrc -o pauli_sim.exe
+This project contains both CPU-only and GPU-accelerated versions of the Pauli propagation simulator.
+All compilation uses the Makefile in the project root directory.
+
+====================================
+PREREQUISITES
+====================================
+
+For CPU-only version:
+- g++ compiler with C++17 support
+- Standard C++ libraries
+
+For GPU version (requires Linux/SSH to ghc38):
+- CUDA Toolkit (tested with CUDA 11.7)
+- nvcc compiler
+- NVIDIA GPU with compute capability 6.1 or higher
+- g++-11 or compatible C++ compiler
+
+
+====================================
+QUICK START - USING MAKEFILE
+====================================
+
+IMPORTANT: All commands below should be run from the PROJECT ROOT directory
+           (e.g., ~/private/15418/Parallelizing-Pauli-Paths/)
+           NOT from the src/ subdirectory!
+
+Build everything (CPU + GPU):
+    make all
+
+Clean previous builds:
+    make clean
+
+Run tests (after building):
+    ./pauli_sim              # Run on GPU (default)
+    ./pauli_sim -c           # Run on CPU
+
+Run specific test by index (1-based):
+    ./pauli_sim -t N         # Run test N on GPU (default)
+    ./pauli_sim -c -t N      # Run test N on CPU
+
+Show help:
+    ./pauli_sim -?
+
+Compare CPU vs GPU performance:
+    ./compare_performance.sh        # Compare all tests
+    ./compare_performance.sh 23     # Compare test 23 (HEAVY A)
+    ./compare_performance.sh 27     # Compare test 27 (HEAVY E)
+    
+    This script automatically runs both CPU and GPU versions,
+    measures execution times, and calculates the speedup.
+
+
+====================================
+COMPILATION DETAILS
+====================================
+
+The Makefile compiles the following source files:
+
+1. src/pauli_gpu.cu (GPU implementation)
+   - Compiled with: nvcc -O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/g++-11
+   - Creates: build/pauli_gpu.o
+
+2. src/pauli.cpp (CPU implementation and core logic)
+   - Compiled with: g++ -std=c++17 -Wall -O2
+   - Creates: build/pauli.o
+
+3. src/main.cpp (Main entry point)
+   - Compiled with: g++ -std=c++17 -Wall -O2
+   - Creates: build/main.o
+
+4. src/tests.cpp (Test suite with 27 tests)
+   - Compiled with: g++ -std=c++17 -Wall -O2
+   - Creates: build/tests.o
+
+5. src/diagnostic.cpp (Diagnostic tool - separate executable)
+   - Note: Not included in main Makefile
+   - See "DIAGNOSTIC TOOL" section below
+
+Final linking:
+    g++ -o pauli_sim build/pauli_gpu.o build/pauli.o build/main.o build/tests.o -L/usr/local/cuda-11.7/lib64 -lcudart
+
+
+====================================
+MAKEFILE TARGETS
+====================================
+
+make all
+    - Creates build/ directory
+    - Compiles all .cu and .cpp files
+    - Links into pauli_sim executable
+
+make clean
+    - Removes build/ directory and pauli_sim executable
+
+make compile-test
+    - Quick test: compiles only pauli_gpu.cu without linking
+    - Useful for checking CUDA compilation without full build
+
+make check-files
+    - Verifies all required source files exist
+    - Helpful for debugging missing file errors
+
+make test
+    - Builds and runs the test suite
+    - Equivalent to: make all && ./pauli_sim --test
+
+make run
+    - Builds and runs the simulator
+    - Equivalent to: make all && ./pauli_sim
+
+
+====================================
+RUNNING TESTS
+====================================
+
+The test suite (tests.cpp) contains 27 tests:
+- Tests 1-22: Basic correctness tests (Clifford gates, rotations, circuits)
+- Tests 23-27: Heavy performance tests (HEAVY A, B, C, D, E)
 
 Run all tests:
-    .\pauli_sim.exe -d cpu
+    ./pauli_sim              # GPU version (default)
+    ./pauli_sim -c           # CPU version
 
-Run a single test (index N, 1-based):
-    .\pauli_sim.exe -d cpu -i N
+Run single test (1-based index):
+    ./pauli_sim -c -t 5      # Run test #5 on CPU
+    ./pauli_sim -t 23        # Run HEAVY A on GPU
 
-Alternative (via script):
-    .\build_run_tests.ps1              # build and run all tests
-    .\build_run_tests.ps1 -Index N      # build and run single test (1-based index)
-
-The tests check:
-- Basic Clifford gates (H, CNOT, S, T)
-- Rotation gates (RX, RY, RZ)
-- Multi-qubit entangled circuits
-- Deep layered circuits
+Expected results:
+- All tests should pass with 100% success rate
+- Heavy tests (23-27) demonstrate GPU speedup over CPU
+- GPU version should show 5-50x speedup on heavy tests
 
 
-COMPILE AND RUN: diagnostic.cpp
---------------------------------
-Compile (PowerShell):
-    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic.exe
+====================================
+DIAGNOSTIC TOOL (diagnostic.cpp)
+====================================
+
+The diagnostic tool is NOT part of the main Makefile.
+It demonstrates how Pauli word count changes with different gate types.
+
+Compile manually:
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic
 
 Run:
-    .\diagnostic.exe
+    ./diagnostic
 
-Alternative (via script):
-    .\build_run_diagnostic.ps1          # build and run diagnostic tool
-
-This shows how:
+This shows:
 - Clifford gates keep Pauli word count constant
 - Rotation gates cause Pauli word expansion
 - Multiple rotations lead to exponential growth
 
 
-COMPILE: pauli.cpp
--------------------
-Note: pauli.cpp is a library file (no main function) and cannot be run standalone.
-It must be compiled together with other source files that provide main().
+====================================
+CPU-ONLY BUILD (No GPU)
+====================================
 
-Compile as object file (PowerShell):
-    g++ -DCPU_ONLY -std=c++17 -Wall -O2 -c src/pauli.cpp -Isrc -o pauli.o
+If you want to build without GPU support (e.g., on Windows):
 
-Or compile together with other files (see tests.cpp and diagnostic.cpp sections above).
+Compile tests:
+    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/pauli.cpp src/main.cpp src/tests.cpp -Isrc -o pauli_sim.exe
 
+Run:
+    .\pauli_sim.exe -c
 
-QUICK START (If Already Compiled)
-----------------------------------
-Run tests:
-    .\pauli_sim.exe -d cpu
-
-Run diagnostic:
-    .\diagnostic.exe
+Note: The -DCPU_ONLY flag disables GPU code compilation.
 
 
-CLEAN UP
---------
-Remove object files (PowerShell):
-    Remove-Item -Path "src\*.o" -ErrorAction SilentlyContinue
-Remove executables (PowerShell):
-    Remove-Item -Path "*.exe" -ErrorAction SilentlyContinue
+====================================
+MANUAL COMPILATION (If Makefile Fails)
+====================================
+
+If you need to compile manually without the Makefile:
+
+1. Create build directory:
+    mkdir -p build
+
+2. Compile CUDA file:
+    nvcc -O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/g++-11 \
+         -I. -Isrc -c src/pauli_gpu.cu -o build/pauli_gpu.o
+
+3. Compile C++ files:
+    g++ -std=c++17 -Wall -O2 -I. -Isrc -c src/pauli.cpp -o build/pauli.o
+    g++ -std=c++17 -Wall -O2 -I. -Isrc -c src/main.cpp -o build/main.o
+    g++ -std=c++17 -Wall -O2 -I. -Isrc -c src/tests.cpp -o build/tests.o
+
+4. Link everything:
+    g++ -std=c++17 -Wall -O2 -o pauli_sim build/pauli_gpu.o build/pauli.o \
+        build/main.o build/tests.o -L/usr/local/cuda-11.7/lib64 -lcudart
 
 
-NOTES
------
-- The -DCPU_ONLY flag compiles without GPU support
-- All executables are created in the repository root directory
-- Tests should pass with 100% success rate
-- pauli.cpp is a library and requires linking with files that have main() functions
+====================================
+GPU-SPECIFIC NOTES
+====================================
 
+- GPU version uses CUDA kernels for parallel Pauli word propagation
+- Requires CUDA runtime library (libcudart)
+- GPU architecture is set to compute_61 (adjust in Makefile if needed)
+- Maximum of 1280 Pauli words supported (MAX_PAULI_WORDS = 1280)
+- Uses 128 threads per block (THREADS_PER_BLOCK = 128)
+- If compilation fails, check CUDA_PATH in Makefile matches your installation
+- GPU compilation must be done on a system with CUDA installed (e.g., SSH to ghc38)
+
+
+====================================
+TROUBLESHOOTING
+====================================
+
+"nvcc: command not found"
+    - CUDA is not installed or not in PATH
+    - SSH to ghc38.ghc.andrew.cmu.edu for GPU compilation
+
+"cannot find -lcudart"
+    - CUDA runtime library not found
+    - Check CUDA_PATH in Makefile (default: /usr/local/cuda-11.7)
+    - Verify CUDA is properly installed
+
+Build succeeds but tests fail:
+    - Ensure you're using -O2 optimization flag
+    - Check that all source files are up to date
+    - Try 'make clean && make all' to rebuild from scratch
+
+GPU tests show no speedup:
+    - Verify GPU is actually being used (check nvidia-smi)
+    - Try heavy tests (23-27) which show clearer GPU advantage
+    - Check for memory transfer overhead
+
+
+====================================
+FILE DESCRIPTIONS
+====================================
+
+Source Files:
+- src/pauli.cpp         : Core CPU implementation of Pauli propagation
+- src/pauli.h           : Header file with data structures and declarations
+- src/pauli_gpu.cu      : GPU/CUDA implementation of Pauli propagation
+- src/pauli_gpu.h       : GPU-specific header file
+- src/main.cpp          : Main entry point, command-line parsing
+- src/tests.cpp         : Test suite with 27 tests
+- src/diagnostic.cpp    : Standalone diagnostic tool
+- src/gates.cu_inl      : CUDA inline gate implementations
+- src/exclusiveScan.cu_inl : CUDA parallel scan implementation
+
+Build Files:
+- Makefile              : Main build configuration
+- build/                : Directory for compiled object files (created by make)
+
+Executables:
+- pauli_sim             : Main simulator (CPU + GPU)
+- diagnostic            : Diagnostic tool (CPU only)
+
+
+====================================
+SUMMARY
+====================================
+
+Most common workflows:
+
+1. Build and run all tests on CPU:
+    make all
+    ./pauli_sim -c
+
+2. Build and run all tests on GPU:
+    make all
+    ./pauli_sim
+
+3. Run specific heavy test on GPU:
+    make all
+    ./pauli_sim -t 27           # HEAVY E (extreme test)
+
+4. Run specific test on CPU:
+    make all
+    ./pauli_sim -c -t 5         # Run test 5 on CPU
+
+5. Clean and rebuild:
+    make clean
+    make all
+
+6. Quick CUDA compilation check:
+    make compile-test
