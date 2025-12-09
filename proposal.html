@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,15 +8,17 @@
     <title>Project Proposal - Parallelizing Pauli Paths</title>
     <link rel="stylesheet" href="styles.css">
     <script type="text/javascript" async
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-    </script>
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
 </head>
+
 <body>
     <div class="nav">
         <div class="nav-container">
             <a href="index.html" class="nav-link">Home</a>
             <a href="proposal.html" class="nav-link active">Proposal</a>
             <a href="milestone.html" class="nav-link">Milestone</a>
+            <a href="report.html" class="nav-link">Final Report</a>
         </div>
     </div>
 
@@ -29,52 +32,98 @@
         </div>
         <div class="content-section">
             <h2>Summary</h2>
-            <p>We will implement a parallelized version of the Pauli path algorithm for quantum circuit simulation, focusing on parallelizing the computation over the number of Pauli words. The goal is to accelerate quantum circuit simulation by performing independent Pauli word computations concurrently on NVIDIA GPUs. We will use CUDA programming to exploit GPU parallelism and optimize the simulation for larger quantum systems.</p>
+            <p>We will implement a parallelized version of the Pauli path algorithm for quantum circuit simulation,
+                focusing on parallelizing the computation over the number of Pauli words. The goal is to accelerate
+                quantum circuit simulation by performing independent Pauli word computations concurrently on NVIDIA
+                GPUs. We will use CUDA programming to exploit GPU parallelism and optimize the simulation for larger
+                quantum systems.</p>
         </div>
 
         <div class="content-section">
             <h2>Background</h2>
             <h3>Motivation</h3>
-            <p>In quantum computing, a central task is to estimate expectation values for an observable \( \hat{H} \) given a quantum circuit that prepares a quantum state \( \lvert \psi \rangle \). Specifically, for a quantum system that evolves under a quantum circuit \( U \), the expectation value of an observable \( \hat{H} \) is given by:</p>
-            <p>\[ \langle \hat{H} \rangle = \langle \psi \lvert \hat{H} \lvert \psi \rangle = \langle \psi_0 \lvert U^\dagger \hat{H} U \lvert \psi_0 \rangle \]</p>
-            <p>This expectation value is fundamental in various quantum algorithms and simulations, such as in quantum chemistry for determining energy levels, or in general quantum information processing tasks.</p>
-            <p>However, simulating quantum systems and computing such expectation values classically is not easy. The quantum state of a system grows exponentially with the number of qubits, making direct simulation of large systems infeasible. Thus, methods that exploit the structure of quantum circuits and observables are essential for efficient simulation.</p>
+            <p>In quantum computing, a central task is to estimate expectation values for an observable \( \hat{H} \)
+                given a quantum circuit that prepares a quantum state \( \lvert \psi \rangle \). Specifically, for a
+                quantum system that evolves under a quantum circuit \( U \), the expectation value of an observable \(
+                \hat{H} \) is given by:</p>
+            <p>\[ \langle \hat{H} \rangle = \langle \psi \lvert \hat{H} \lvert \psi \rangle = \langle \psi_0 \lvert
+                U^\dagger \hat{H} U \lvert \psi_0 \rangle \]</p>
+            <p>This expectation value is fundamental in various quantum algorithms and simulations, such as in quantum
+                chemistry for determining energy levels, or in general quantum information processing tasks.</p>
+            <p>However, simulating quantum systems and computing such expectation values classically is not easy. The
+                quantum state of a system grows exponentially with the number of qubits, making direct simulation of
+                large systems infeasible. Thus, methods that exploit the structure of quantum circuits and observables
+                are essential for efficient simulation.</p>
 
             <h3>Naive Statevector Simulation</h3>
-            <p>The most direct and intuitive classical simulation method for quantum circuits is statevector simulation. In this approach, the quantum state \( \lvert \psi \rangle \) is represented as a vector in a complex vector space, and quantum gates are applied directly to this state. The evolution of the system is tracked by applying the corresponding unitary matrices of the quantum gates to the statevector. This can be mathematically described as:</p>
+            <p>The most direct and intuitive classical simulation method for quantum circuits is statevector simulation.
+                In this approach, the quantum state \( \lvert \psi \rangle \) is represented as a vector in a complex
+                vector space, and quantum gates are applied directly to this state. The evolution of the system is
+                tracked by applying the corresponding unitary matrices of the quantum gates to the statevector. This can
+                be mathematically described as:</p>
             <p>\[ \lvert \psi' \rangle = U \lvert \psi \rangle \]</p>
             <p>where \( U \) is the unitary matrix corresponding to a gate in the circuit.</p>
-            <p>While statevector simulation works well for small systems, it faces exponential scaling with the number of qubits. For a system of \( n \) qubits, the quantum statevector has \( 2^n \) complex amplitudes. As the number of qubits grows, the computational resources required to store and manipulate the statevector grow exponentially, making it infeasible for larger systems.</p>
+            <p>While statevector simulation works well for small systems, it faces exponential scaling with the number
+                of qubits. For a system of \( n \) qubits, the quantum statevector has \( 2^n \) complex amplitudes. As
+                the number of qubits grows, the computational resources required to store and manipulate the statevector
+                grow exponentially, making it infeasible for larger systems.</p>
 
             <h3>Hamiltonian Decomposition into Pauli Words</h3>
-            <p>In quantum simulations, a more scalable approach for simulating circuits and computing expectation values is to represent the observable \( \hat{H} \) as a sum of <strong>Pauli words</strong>. Pauli words are tensor products of Pauli matrices \( \{ I, X, Y, Z \} \), where each matrix acts on one or more qubits. As such, an observable can be written as:</p>
+            <p>In quantum simulations, a more scalable approach for simulating circuits and computing expectation values
+                is to represent the observable \( \hat{H} \) as a sum of <strong>Pauli words</strong>. Pauli words are
+                tensor products of Pauli matrices \( \{ I, X, Y, Z \} \), where each matrix acts on one or more qubits.
+                As such, an observable can be written as:</p>
             <p>\[ \hat{H} = \sum_i c_i P_i \]</p>
-            <p>Here, \( P_i \) represents a Pauli word (such as \( X \otimes Z \otimes I \)), and \( c_i \) is the corresponding coefficient. Pauli words are particularly useful because they provide a structured and efficient way to represent the observable in quantum simulations. In practice, most quantum systems are modeled using observables that are sums of Pauli words.</p>
+            <p>Here, \( P_i \) represents a Pauli word (such as \( X \otimes Z \otimes I \)), and \( c_i \) is the
+                corresponding coefficient. Pauli words are particularly useful because they provide a structured and
+                efficient way to represent the observable in quantum simulations. In practice, most quantum systems are
+                modeled using observables that are sums of Pauli words.</p>
 
             <h3>Schrödinger Picture vs Heisenberg Picture</h3>
-            <p>In the Schrödinger picture, we track the evolution of the quantum state under the action of quantum gates. However, in the Heisenberg picture, the state remains fixed, and instead, we describe the system's evolution by the time evolution of observables.</p>
-            <p>In this framework, we focus on how the Pauli words, which represent the observable \( \hat{H} \), evolve as quantum gates are applied. The key difference between the two pictures is:</p>
+            <p>In the Schrödinger picture, we track the evolution of the quantum state under the action of quantum
+                gates. However, in the Heisenberg picture, the state remains fixed, and instead, we describe the
+                system's evolution by the time evolution of observables.</p>
+            <p>In this framework, we focus on how the Pauli words, which represent the observable \( \hat{H} \), evolve
+                as quantum gates are applied. The key difference between the two pictures is:</p>
 
             <ul>
-                <li><strong>Schrödinger Picture:</strong> The quantum state \( \lvert \psi(t) \rangle \) evolves according to the unitary operator \( U(t) \):
+                <li><strong>Schrödinger Picture:</strong> The quantum state \( \lvert \psi(t) \rangle \) evolves
+                    according to the unitary operator \( U(t) \):
                     <p>\[ \lvert \psi(t) \rangle = U(t) \lvert \psi(0) \rangle \]</p>
                     <p>Expectation value is computed as:</p>
                     <p>\[ \langle \hat{H} \rangle = \langle \psi(t) \lvert \hat{H} \lvert \psi(t) \rangle \]</p>
                 </li>
-                <li><strong>Heisenberg Picture:</strong> In this picture, the operator \( \hat{H}(t) \) evolves instead of the state. The evolution of the observable is given by:
+                <li><strong>Heisenberg Picture:</strong> In this picture, the operator \( \hat{H}(t) \) evolves instead
+                    of the state. The evolution of the observable is given by:
                     <p>\[ \hat{H}(t) = U^\dagger(t) \hat{H} U(t) \]</p>
                     <p>The expectation value is then calculated as:</p>
                     <p>\[ \langle \hat{H} \rangle = \langle \psi(0) \lvert \hat{H}(t) \lvert \psi(0) \rangle \]</p>
                 </li>
             </ul>
-            <p>In this approach, we track the evolution of observables—specifically Pauli words—instead of the quantum state. Pauli propagation focuses on how these Pauli words evolve under quantum gates. One challenge in simulating quantum circuits is the exponential growth of Pauli words as the number of qubits increases. <strong>Pauli Paths</strong> offer an efficient way to manage this complexity by tracking the evolution of Pauli operators, rather than the full state vector. In the Schrödinger picture, simulating state evolution can be computationally expensive. In contrast, the Heisenberg picture allows us to focus on the evolution of Pauli words, where each gate acts on them deterministically. This significantly reduces the computational cost and avoids the exponential blow-up that comes with tracking the full quantum state.</p>
+            <p>In this approach, we track the evolution of observables—specifically Pauli words—instead of the quantum
+                state. Pauli propagation focuses on how these Pauli words evolve under quantum gates. One challenge in
+                simulating quantum circuits is the exponential growth of Pauli words as the number of qubits increases.
+                <strong>Pauli Paths</strong> offer an efficient way to manage this complexity by tracking the evolution
+                of Pauli operators, rather than the full state vector. In the Schrödinger picture, simulating state
+                evolution can be computationally expensive. In contrast, the Heisenberg picture allows us to focus on
+                the evolution of Pauli words, where each gate acts on them deterministically. This significantly reduces
+                the computational cost and avoids the exponential blow-up that comes with tracking the full quantum
+                state.</p>
 
             <h3>Truncation of Pauli Words for Scalability</h3>
-            <p>A major obstacle in simulating quantum circuits is the rapid growth in the number of Pauli words as the number of qubits increases. If we were to track all possible Pauli words during the simulation, the computational cost would become prohibitive. To mitigate this, <strong>truncation techniques</strong> are often applied to limit the number of Pauli words tracked at any given time.</p>
-            <p>Truncation involves discarding Pauli words that exceed a certain weight threshold. The weight of a Pauli word refers to the number of qubits on which it has a non-trivial component (such as \( X \), \( Y \), or \( Z \), rather than the identity \( I \)). By setting a maximum weight, we can discard Pauli words that would otherwise require excessive computational resources.</p>
+            <p>A major obstacle in simulating quantum circuits is the rapid growth in the number of Pauli words as the
+                number of qubits increases. If we were to track all possible Pauli words during the simulation, the
+                computational cost would become prohibitive. To mitigate this, <strong>truncation techniques</strong>
+                are often applied to limit the number of Pauli words tracked at any given time.</p>
+            <p>Truncation involves discarding Pauli words that exceed a certain weight threshold. The weight of a Pauli
+                word refers to the number of qubits on which it has a non-trivial component (such as \( X \), \( Y \),
+                or \( Z \), rather than the identity \( I \)). By setting a maximum weight, we can discard Pauli words
+                that would otherwise require excessive computational resources.</p>
 
             <h3>Algorithm Overview: Pauli Propagation for Expectation Value Estimation</h3>
-            <p>The following pseudocode outlines the key steps involved in estimating expectation values using Pauli propagation. This approach efficiently tracks the evolution of Pauli words in the Heisenberg picture without the need to simulate the full quantum state vector.</p>
+            <p>The following pseudocode outlines the key steps involved in estimating expectation values using Pauli
+                propagation. This approach efficiently tracks the evolution of Pauli words in the Heisenberg picture
+                without the need to simulate the full quantum state vector.</p>
 
             <pre>
                 # Pseudocode for Pauli Propagation Simulation
@@ -105,17 +154,33 @@
             </pre>
 
             <h3>Leveraging Parallelism for Efficient Simulation</h3>
-            <p>Simulating quantum circuits involves managing large-scale computations, especially when tracking Pauli words, which grow exponentially with the number of qubits. The challenge of simulating these systems can be mitigated by parallelizing the computation across multiple processing units, such as GPUs. Certain aspects of the Pauli path propagation algorithm are well-suited to parallelism, which can significantly speed up the computation and make simulating larger quantum circuits feasible.</p>
+            <p>Simulating quantum circuits involves managing large-scale computations, especially when tracking Pauli
+                words, which grow exponentially with the number of qubits. The challenge of simulating these systems can
+                be mitigated by parallelizing the computation across multiple processing units, such as GPUs. Certain
+                aspects of the Pauli path propagation algorithm are well-suited to parallelism, which can significantly
+                speed up the computation and make simulating larger quantum circuits feasible.</p>
 
             <h4>Parallelism in Pauli Word Computations</h4>
-            <p>One of the key aspects of the Pauli path propagation algorithm is that each Pauli word evolves independently under the action of quantum gates. This independence makes Pauli word computations an ideal candidate for parallelization. By mapping each Pauli word to a separate processing thread, we can perform these operations concurrently, dramatically reducing the overall time required for the simulation.</p>
+            <p>One of the key aspects of the Pauli path propagation algorithm is that each Pauli word evolves
+                independently under the action of quantum gates. This independence makes Pauli word computations an
+                ideal candidate for parallelization. By mapping each Pauli word to a separate processing thread, we can
+                perform these operations concurrently, dramatically reducing the overall time required for the
+                simulation.</p>
 
             <h4>How GPU Parallelism Works in Pauli Path Propagation</h4>
-            <p>In our parallelized implementation, each Pauli word is treated as an independent task, and we assign each task to a separate thread on the GPU. The main steps that benefit from parallelism include:</p>
+            <p>In our parallelized implementation, each Pauli word is treated as an independent task, and we assign each
+                task to a separate thread on the GPU. The main steps that benefit from parallelism include:</p>
             <ul>
-                <li><strong>Pauli Word Evolution:</strong> Each Pauli word undergoes a transformation when quantum gates are applied. Since these transformations are independent for each Pauli word, they can be executed concurrently across multiple GPU threads.</li>
-                <li><strong>Pauli Word Truncation:</strong> After each gate transformation, Pauli words may need to be truncated based on a weight threshold. This process is also independent for each Pauli word, allowing for parallel computation of truncation steps.</li>
-                <li><strong>Expectation Value Calculation:</strong> Finally, the expectation value is calculated by contracting the evolved Pauli words with the initial state. Since each Pauli word contributes independently, this computation can be distributed across GPU threads, speeding up the overall calculation.</li>
+                <li><strong>Pauli Word Evolution:</strong> Each Pauli word undergoes a transformation when quantum gates
+                    are applied. Since these transformations are independent for each Pauli word, they can be executed
+                    concurrently across multiple GPU threads.</li>
+                <li><strong>Pauli Word Truncation:</strong> After each gate transformation, Pauli words may need to be
+                    truncated based on a weight threshold. This process is also independent for each Pauli word,
+                    allowing for parallel computation of truncation steps.</li>
+                <li><strong>Expectation Value Calculation:</strong> Finally, the expectation value is calculated by
+                    contracting the evolved Pauli words with the initial state. Since each Pauli word contributes
+                    independently, this computation can be distributed across GPU threads, speeding up the overall
+                    calculation.</li>
             </ul>
         </div>
 
@@ -123,121 +188,191 @@
 
         <div class="content-section">
             <h2>The Challenge</h2>
-    <p>Simulating quantum circuits, especially for large-scale quantum systems, presents significant challenges due to the exponential growth of the number of Pauli words as the number of qubits increases. The core difficulty lies in efficiently managing the evolution of a growing number of Pauli words, while also ensuring that the computation remains scalable and performant when parallelized.</p>
+            <p>Simulating quantum circuits, especially for large-scale quantum systems, presents significant challenges
+                due to the exponential growth of the number of Pauli words as the number of qubits increases. The core
+                difficulty lies in efficiently managing the evolution of a growing number of Pauli words, while also
+                ensuring that the computation remains scalable and performant when parallelized.</p>
 
-    <h3>Exponential Growth of Pauli Words</h3>
-    <p>The most significant challenge in parallelizing this workload is the exponential growth of the number of Pauli words with respect to the number of qubits in the quantum system. As more qubits are added, the size of the state space increases exponentially, which results in a proportional increase in the number of Pauli words needed to represent observables. This means that mapping each Pauli word to an independent GPU thread becomes more difficult as the number of Pauli words increases, since we may quickly exceed the number of available threads or run into memory limitations.</p>
-    <p>For instance, with just 5 qubits, there are \( 4^5 = 1024 \) possible Pauli words, but with 10 qubits, this number grows to \( 4^{10} = 1,048,576 \). As the qubit count rises, it becomes increasingly difficult to allocate enough threads to manage all the Pauli words without significant overhead or memory constraints.</p>
+            <h3>Exponential Growth of Pauli Words</h3>
+            <p>The most significant challenge in parallelizing this workload is the exponential growth of the number of
+                Pauli words with respect to the number of qubits in the quantum system. As more qubits are added, the
+                size of the state space increases exponentially, which results in a proportional increase in the number
+                of Pauli words needed to represent observables. This means that mapping each Pauli word to an
+                independent GPU thread becomes more difficult as the number of Pauli words increases, since we may
+                quickly exceed the number of available threads or run into memory limitations.</p>
+            <p>For instance, with just 5 qubits, there are \( 4^5 = 1024 \) possible Pauli words, but with 10 qubits,
+                this number grows to \( 4^{10} = 1,048,576 \). As the qubit count rises, it becomes increasingly
+                difficult to allocate enough threads to manage all the Pauli words without significant overhead or
+                memory constraints.</p>
 
-    <h3>Workload Characteristics</h3>
-    <p>The computational workload associated with evolving Pauli words is inherently parallel, as each Pauli word can evolve independently under the action of quantum gates. However, the following characteristics of the workload make mapping it to a parallel system challenging:</p>
+            <h3>Workload Characteristics</h3>
+            <p>The computational workload associated with evolving Pauli words is inherently parallel, as each Pauli
+                word can evolve independently under the action of quantum gates. However, the following characteristics
+                of the workload make mapping it to a parallel system challenging:</p>
 
-    <ul style="margin-bottom: 20px;">
-        <li><strong>Memory Access Patterns</strong>: Each Pauli word contains a tensor product of Pauli matrices (e.g., \( X \otimes Z \otimes I \)), which requires memory access for storing and manipulating these matrices. Since the number of Pauli words increases with the number of qubits, there is a substantial increase in the memory required to store both the Pauli words and their corresponding coefficients. The memory access pattern can become highly scattered, which may result in inefficient memory usage, especially if data is not cached or stored contiguously in memory.</li>
+            <ul style="margin-bottom: 20px;">
+                <li><strong>Memory Access Patterns</strong>: Each Pauli word contains a tensor product of Pauli matrices
+                    (e.g., \( X \otimes Z \otimes I \)), which requires memory access for storing and manipulating these
+                    matrices. Since the number of Pauli words increases with the number of qubits, there is a
+                    substantial increase in the memory required to store both the Pauli words and their corresponding
+                    coefficients. The memory access pattern can become highly scattered, which may result in inefficient
+                    memory usage, especially if data is not cached or stored contiguously in memory.</li>
 
-        <li><strong>Communication-to-Computation Ratio</strong>: The communication-to-computation ratio can become problematic as the number of Pauli words increases. When using a parallelized approach, each thread must not only compute the transformation of its assigned Pauli word but also communicate its result with the global state (for expectation value computation). As the number of threads grows, the overhead associated with synchronizing these computations and collecting results may increase, leading to diminishing returns from parallelization.</li>
+                <li><strong>Communication-to-Computation Ratio</strong>: The communication-to-computation ratio can
+                    become problematic as the number of Pauli words increases. When using a parallelized approach, each
+                    thread must not only compute the transformation of its assigned Pauli word but also communicate its
+                    result with the global state (for expectation value computation). As the number of threads grows,
+                    the overhead associated with synchronizing these computations and collecting results may increase,
+                    leading to diminishing returns from parallelization.</li>
 
-        <li><strong>Divergent Execution</strong>: Different threads need to perform different computations based on their assigned Pauli word. For example, some Pauli words might involve a complex set of gate transformations (Clifford vs non-Clifford Gates), while others may not require as much computation. This variation in workload per thread can result in inefficient GPU resource utilization, where some threads are idle while others are overloaded with computation. Managing this divergence efficiently is a key challenge in parallelizing Pauli word propagation.</li>
-    </ul>
+                <li><strong>Divergent Execution</strong>: Different threads need to perform different computations based
+                    on their assigned Pauli word. For example, some Pauli words might involve a complex set of gate
+                    transformations (Clifford vs non-Clifford Gates), while others may not require as much computation.
+                    This variation in workload per thread can result in inefficient GPU resource utilization, where some
+                    threads are idle while others are overloaded with computation. Managing this divergence efficiently
+                    is a key challenge in parallelizing Pauli word propagation.</li>
+            </ul>
 
-    <h3>System Constraints</h3>
-    <p>Several system constraints make mapping the workload of Pauli word simulation to a parallel architecture challenging:</p>
-    <ul style="margin-bottom: 20px;">
-        <li><strong>Thread Scaling</strong>: The number of threads available on a GPU is finite, and as the number of Pauli words grows exponentially, it becomes increasingly difficult to map each Pauli word to an independent thread. We may eventually run out of threads, especially for systems with a large number of qubits. When this happens, we must either increase the number of GPUs or implement techniques like work-stealing (dynamically assigning Pauli words to idle threads) or thread-blocking (grouping Pauli words into blocks of computations to be processed sequentially).</li>
+            <h3>System Constraints</h3>
+            <p>Several system constraints make mapping the workload of Pauli word simulation to a parallel architecture
+                challenging:</p>
+            <ul style="margin-bottom: 20px;">
+                <li><strong>Thread Scaling</strong>: The number of threads available on a GPU is finite, and as the
+                    number of Pauli words grows exponentially, it becomes increasingly difficult to map each Pauli word
+                    to an independent thread. We may eventually run out of threads, especially for systems with a large
+                    number of qubits. When this happens, we must either increase the number of GPUs or implement
+                    techniques like work-stealing (dynamically assigning Pauli words to idle threads) or thread-blocking
+                    (grouping Pauli words into blocks of computations to be processed sequentially).</li>
 
-        <li><strong>Memory Constraints</strong>: As the number of Pauli words grows, the memory required to store all Pauli words and their corresponding coefficients can quickly exceed the available GPU memory. This requires either more advanced memory management strategies (e.g., memory paging) or limiting the number of Pauli words that can be tracked at any given time, potentially leading to truncated or approximated results.</li>
+                <li><strong>Memory Constraints</strong>: As the number of Pauli words grows, the memory required to
+                    store all Pauli words and their corresponding coefficients can quickly exceed the available GPU
+                    memory. This requires either more advanced memory management strategies (e.g., memory paging) or
+                    limiting the number of Pauli words that can be tracked at any given time, potentially leading to
+                    truncated or approximated results.</li>
 
-        <li><strong>Synchronization Overhead</strong>: In a parallelized system, synchronization is necessary to ensure that all threads are working on the correct parts of the Pauli word set and that intermediate results are properly handled. As the number of threads increases, the synchronization cost may begin to dominate, causing delays in computation. Efficient load balancing becomes crucial to avoid threads idling while waiting for others to complete their tasks.</li>
-    </ul>
+                <li><strong>Synchronization Overhead</strong>: In a parallelized system, synchronization is necessary to
+                    ensure that all threads are working on the correct parts of the Pauli word set and that intermediate
+                    results are properly handled. As the number of threads increases, the synchronization cost may begin
+                    to dominate, causing delays in computation. Efficient load balancing becomes crucial to avoid
+                    threads idling while waiting for others to complete their tasks.</li>
+            </ul>
 
-    <h3>What We Hope to Learn</h3>
-    <p>By undertaking this project, we aim to understand how to efficiently scale the simulation of quantum circuits by managing Pauli word evolution through parallelism. Key aspects of the problem we hope to address include:</p>
-    <ul>
-        <li>How to efficiently map an exponentially growing number of Pauli words to a fixed number of GPU threads.</li>
-        <li>How to manage memory constraints while tracking a large number of Pauli words without sacrificing accuracy.</li>
-        <li>The trade-offs between computational overhead (e.g., synchronization) and the benefits of parallelization.</li>
-        <li>How to address divergent execution and achieve load balancing when the computation per Pauli word varies.</li>
-        <li>Strategies for scaling the simulation to large quantum systems while maintaining performance and accuracy.</li>
-    </ul>
+            <h3>What We Hope to Learn</h3>
+            <p>By undertaking this project, we aim to understand how to efficiently scale the simulation of quantum
+                circuits by managing Pauli word evolution through parallelism. Key aspects of the problem we hope to
+                address include:</p>
+            <ul>
+                <li>How to efficiently map an exponentially growing number of Pauli words to a fixed number of GPU
+                    threads.</li>
+                <li>How to manage memory constraints while tracking a large number of Pauli words without sacrificing
+                    accuracy.</li>
+                <li>The trade-offs between computational overhead (e.g., synchronization) and the benefits of
+                    parallelization.</li>
+                <li>How to address divergent execution and achieve load balancing when the computation per Pauli word
+                    varies.</li>
+                <li>Strategies for scaling the simulation to large quantum systems while maintaining performance and
+                    accuracy.</li>
+            </ul>
 
-    <p>Through experimentation and optimization, we hope to find solutions that balance these challenges, enabling efficient and scalable simulation of large quantum circuits.</p>
+            <p>Through experimentation and optimization, we hope to find solutions that balance these challenges,
+                enabling efficient and scalable simulation of large quantum circuits.</p>
         </div>
 
         <div class="content-section">
             <h2>Resources</h2>
-            <p>The primary starting point for this project will be existing open-source codebases and simulators. These include:</p>
+            <p>The primary starting point for this project will be existing open-source codebases and simulators. These
+                include:</p>
             <ul style="margin-bottom: 20px;">
-                <li><a href="https://www.bluequbit.io/blog/pauli-path-simulators">BlueQubit Blog on Pauli Path Simulators</a></li>
-                <li><a href="https://pennylane.ai/qml/demos/tutorial_classical_expval_estimation">PennyLane Tutorial on Classical Expectation Value Estimation</a></li>
-                <li><a href="https://github.com/MSRudolph/PauliPropagation.jl">PauliPropagation.jl GitHub Repository</a></li>
+                <li><a href="https://www.bluequbit.io/blog/pauli-path-simulators">BlueQubit Blog on Pauli Path
+                        Simulators</a></li>
+                <li><a href="https://pennylane.ai/qml/demos/tutorial_classical_expval_estimation">PennyLane Tutorial on
+                        Classical Expectation Value Estimation</a></li>
+                <li><a href="https://github.com/MSRudolph/PauliPropagation.jl">PauliPropagation.jl GitHub Repository</a>
+                </li>
                 <li><a href="https://github.com/Qiskit/pauli-prop">Qiskit's Pauli Propagation Repository</a></li>
             </ul>
-            <p>We plan to start by implementing C++ versions of the key functionalities found in the <a href="https://github.com/MSRudolph/PauliPropagation.jl">PauliPropagation.jl</a> and <a href="https://github.com/Qiskit/pauli-prop">Qiskit/pauli-prop</a> libraries. These repositories provide a foundation for Pauli path simulation, and translating the existing implementations into C++ will provide both performance improvements and more flexibility for adapting the algorithms to different use cases. C++ will be chosen for its high-performance capabilities, especially for numerical computations, which will be crucial for handling large-scale quantum systems efficiently.</p>
-            
+            <p>We plan to start by implementing C++ versions of the key functionalities found in the <a
+                    href="https://github.com/MSRudolph/PauliPropagation.jl">PauliPropagation.jl</a> and <a
+                    href="https://github.com/Qiskit/pauli-prop">Qiskit/pauli-prop</a> libraries. These repositories
+                provide a foundation for Pauli path simulation, and translating the existing implementations into C++
+                will provide both performance improvements and more flexibility for adapting the algorithms to different
+                use cases. C++ will be chosen for its high-performance capabilities, especially for numerical
+                computations, which will be crucial for handling large-scale quantum systems efficiently.</p>
+
             <h3>Starting Point: Papers and References</h3>
             <p>The primary theoretical framework for this project comes from the paper:</p>
             <blockquote>
-                <p><strong>“Simulating Quantum Dynamics with Pauli Paths”</strong> by L. J. S. Ferreira, D. E. Welander, and M. P. da Silva (2020).</p>
+                <p><strong>“Simulating Quantum Dynamics with Pauli Paths”</strong> by L. J. S. Ferreira, D. E. Welander,
+                    and M. P. da Silva (2020).</p>
             </blockquote>
             <p>Additional reference material and technical details will be obtained from the upcoming paper:</p>
             <blockquote>
-                <p><strong>“A Practical Guide to using Pauli Path Simulators for Utility-Scale Quantum Experiments”</strong> by H. Gharibyan, S. Hariprakash, M. Z. Mullath, and V. P. Su, arXiv:2507.10771 (2025). Available: <a href="https://arxiv.org/abs/2507.10771">https://arxiv.org/abs/2507.10771</a></p>
+                <p><strong>“A Practical Guide to using Pauli Path Simulators for Utility-Scale Quantum
+                        Experiments”</strong> by H. Gharibyan, S. Hariprakash, M. Z. Mullath, and V. P. Su,
+                    arXiv:2507.10771 (2025). Available: <a
+                        href="https://arxiv.org/abs/2507.10771">https://arxiv.org/abs/2507.10771</a></p>
             </blockquote>
-            
+
             <h2>Additional Resources</h2>
-            <p>While the above resources will provide most of the theoretical and practical tools needed for this project, there may be some additional computational resources required. Specifically, access to specialized quantum computing hardware or simulators (such as those available through platforms like IBM Qiskit, AWS Braket, or Microsoft Azure Quantum) will be crucial for benchmarking. By using these platforms, we can generate results to compare against our own simulations, helping us evaluate the performance and accuracy of our Pauli paths implementation. This comparison will be key for identifying areas where our simulator can be optimized or refined.</p>
+            <p>While the above resources will provide most of the theoretical and practical tools needed for this
+                project, there may be some additional computational resources required. Specifically, access to
+                specialized quantum computing hardware or simulators (such as those available through platforms like IBM
+                Qiskit, AWS Braket, or Microsoft Azure Quantum) will be crucial for benchmarking. By using these
+                platforms, we can generate results to compare against our own simulations, helping us evaluate the
+                performance and accuracy of our Pauli paths implementation. This comparison will be key for identifying
+                areas where our simulator can be optimized or refined.</p>
         </div>
 
-    <div class="content-section">
-        <h2>Goals and Deliverables</h2>
+        <div class="content-section">
+            <h2>Goals and Deliverables</h2>
 
-        <h3><u>Plan to Achieve:</u></h3>
-        <ul>
-            <li>
-                <strong>Implement a parallel GPU-based Pauli Path simulator.</strong><br>
-                Build a CUDA/C++ implementation of the Pauli Path algorithm that exploits
-                embarrassingly parallel steps—particularly independent Pauli word evolution.
-            </li>
+            <h3><u>Plan to Achieve:</u></h3>
+            <ul>
+                <li>
+                    <strong>Implement a parallel GPU-based Pauli Path simulator.</strong><br>
+                    Build a CUDA/C++ implementation of the Pauli Path algorithm that exploits
+                    embarrassingly parallel steps—particularly independent Pauli word evolution.
+                </li>
 
-            <li>
-                <strong>Compare GPU implementation to CPU-based simulators.</strong><br>
-                Most current Pauli Path simulators operate on CPUs. We will benchmark our GPU version
-                against these implementations and analyze where performance differences arise.
-            </li>
+                <li>
+                    <strong>Compare GPU implementation to CPU-based simulators.</strong><br>
+                    Most current Pauli Path simulators operate on CPUs. We will benchmark our GPU version
+                    against these implementations and analyze where performance differences arise.
+                </li>
 
-            <li>
-                <strong>Evaluate truncation strategies on GPUs.</strong><br>
-                Because the Pauli word set can grow large, we will investigate parallelizable
-                truncation/pruning approaches and measure their effect on performance,
-                memory usage, and simulation accuracy.
-            </li>
-        </ul>
+                <li>
+                    <strong>Evaluate truncation strategies on GPUs.</strong><br>
+                    Because the Pauli word set can grow large, we will investigate parallelizable
+                    truncation/pruning approaches and measure their effect on performance,
+                    memory usage, and simulation accuracy.
+                </li>
+            </ul>
 
-        <h3><u>Hope to Achieve:</u></h3>
-        <ul>
-            <li>
-                <strong>Match or exceed performance of public Pauli Path simulators.</strong><br>
-                Since GPU-optimized Pauli Path simulators are rare, we aim for substantial speedups
-                compared to existing CPU implementations.
-            </li>
+            <h3><u>Hope to Achieve:</u></h3>
+            <ul>
+                <li>
+                    <strong>Match or exceed performance of public Pauli Path simulators.</strong><br>
+                    Since GPU-optimized Pauli Path simulators are rare, we aim for substantial speedups
+                    compared to existing CPU implementations.
+                </li>
 
-            <li>
-                <strong>Implement CPU multithreaded parallelism.</strong><br>
-                If time permits, we will extend our simulator with OpenMP/Pthreads-based
-                CPU parallelism to compare CPU- and GPU-parallelization strategies.
-            </li>
-        </ul>
-        <strong><u>Poster Demo Deliverables:</u></strong>
-        <ul>
-            <li>Speedup plots comparing CPU vs GPU implementations</li>
-            <li>Visualization of Pauli word population growth and truncation over time</li>
-            <li>Expectation-value outputs matching published simulators to validate correctness</li>
-        </ul>
-    </div>
+                <li>
+                    <strong>Implement CPU multithreaded parallelism.</strong><br>
+                    If time permits, we will extend our simulator with OpenMP/Pthreads-based
+                    CPU parallelism to compare CPU- and GPU-parallelization strategies.
+                </li>
+            </ul>
+            <strong><u>Poster Demo Deliverables:</u></strong>
+            <ul>
+                <li>Speedup plots comparing CPU vs GPU implementations</li>
+                <li>Visualization of Pauli word population growth and truncation over time</li>
+                <li>Expectation-value outputs matching published simulators to validate correctness</li>
+            </ul>
+        </div>
 
         <div class="content-section">
             <h2>Schedule</h2>
-        
+
             <div class="schedule">
                 <div class="schedule-item">
                     <div class="week">Week 1 (11/17–11/23)</div>
@@ -248,7 +383,7 @@
                         </ul>
                     </div>
                 </div>
-        
+
                 <div class="schedule-item">
                     <div class="week">Week 2 (11/24–11/30)</div>
                     <div class="task">
@@ -258,7 +393,7 @@
                         </ul>
                     </div>
                 </div>
-        
+
                 <div class="schedule-item">
                     <div class="week">Week 3 (12/1–1/8)</div>
                     <div class="task">
@@ -275,13 +410,15 @@
         <div class="content-section">
             <h2>Platform Choice</h2>
             <p>
-            For hardware we will be using the GHC machines for both their multi-core CPUs and NVIDIA GPUs. We plan to write our entire project in C++ and CUDA
+                For hardware we will be using the GHC machines for both their multi-core CPUs and NVIDIA GPUs. We plan
+                to write our entire project in C++ and CUDA
             </p>
         </div>
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 Parallelizing Pauli Paths Team (arulm, dragazzo)</p>
-        </div>
-    </footer>
+        <footer>
+            <div class="container">
+                <p>&copy; 2025 Parallelizing Pauli Paths Team (arulm, dragazzo)</p>
+            </div>
+        </footer>
 </body>
+
 </html>

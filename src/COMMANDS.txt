@@ -24,64 +24,22 @@ For GPU version (requires Linux/SSH to ghc38):
 QUICK START - USING MAKEFILE
 ====================================
 
-IMPORTANT: All commands below should be run from the PROJECT ROOT directory
-           (e.g., ~/private/15418/Parallelizing-Pauli-Paths/)
-           NOT from the src/ subdirectory!
+1. Build both executables:
+   cd src
+   make clean && make all
+   cd ..
 
-Build everything (CPU + GPU):
-    make all
+2. Run a test on GPU:
+   ./pauli_propagation_gpu.exe 23 gpu
 
-Clean previous builds:
-    make clean
+3. Run a test on CPU:
+   ./pauli_propagation_gpu.exe 23 cpu
 
-Run tests (after building):
-    ./pauli_sim              # Run on GPU (default)
-    ./pauli_sim -c           # Run on CPU
+4. Run Python benchmark:
+   python3 quick_test_stress.py
 
-Run specific test by index (1-based):
-    ./pauli_sim -t N         # Run test N on GPU (default)
-    ./pauli_sim -c -t N      # Run test N on CPU
-
-Show help:
-    ./pauli_sim -?
-
-Compare CPU vs GPU performance:
-    ./compare_performance.sh        # Compare all tests
-    ./compare_performance.sh 23     # Compare test 23 (HEAVY A)
-    ./compare_performance.sh 27     # Compare test 27 (HEAVY E)
-    
-    This script automatically runs both CPU and GPU versions,
-    measures execution times, and calculates the speedup.
-
-
-====================================
-COMPILATION DETAILS
-====================================
-
-The Makefile compiles the following source files:
-
-1. src/pauli_gpu.cu (GPU implementation)
-   - Compiled with: nvcc -O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/g++-11
-   - Creates: build/pauli_gpu.o
-
-2. src/pauli.cpp (CPU implementation and core logic)
-   - Compiled with: g++ -std=c++17 -Wall -O2
-   - Creates: build/pauli.o
-
-3. src/main.cpp (Main entry point)
-   - Compiled with: g++ -std=c++17 -Wall -O2
-   - Creates: build/main.o
-
-4. src/tests.cpp (Test suite with 27 tests)
-   - Compiled with: g++ -std=c++17 -Wall -O2
-   - Creates: build/tests.o
-
-5. src/diagnostic.cpp (Diagnostic tool - separate executable)
-   - Note: Not included in main Makefile
-   - See "DIAGNOSTIC TOOL" section below
-
-Final linking:
-    g++ -o pauli_sim build/pauli_gpu.o build/pauli.o build/main.o build/tests.o -L/usr/local/cuda-11.7/lib64 -lcudart
+5. Generate all report figures:
+   python3 generate_all_figures.py
 
 
 ====================================
@@ -117,41 +75,141 @@ make run
 RUNNING TESTS
 ====================================
 
-The test suite (tests.cpp) contains 27 tests:
-- Tests 1-22: Basic correctness tests (Clifford gates, rotations, circuits)
-- Tests 23-27: Heavy performance tests (HEAVY A, B, C, D, E)
+Single test on GPU:
+    ./pauli_propagation_gpu.exe 23 gpu
 
-Run all tests:
-    ./pauli_sim              # GPU version (default)
-    ./pauli_sim -c           # CPU version
+Single test on CPU:
+    ./pauli_propagation_gpu.exe 23 cpu
 
-Run single test (1-based index):
-    ./pauli_sim -c -t 5      # Run test #5 on CPU
-    ./pauli_sim -t 23        # Run HEAVY A on GPU
+Test numbers:
+    1-22  : Basic correctness tests
+    23-32 : Stress tests (designed for GPU speedup)
 
-Expected results:
-- All tests should pass with 100% success rate
-- Heavy tests (23-27) demonstrate GPU speedup over CPU
-- GPU version should show 5-50x speedup on heavy tests
+
+====================================
+STRESS TESTS (23-32)
+====================================
+
+Test 23: 2K words, 100 layers  (2-5x speedup)
+Test 24: 5K words, 150 layers  (3-8x speedup)
+Test 25: 3K words, 200 layers  (3-6x speedup)
+Test 26: 1K words, 300 layers  (2-4x speedup)
+Test 27: 4K words, 100 layers  (3-7x speedup)
+Test 28: 2K words, 250 layers  (2-5x speedup)
+Test 29: 1K words, 400 layers  (2-4x speedup)
+Test 30: 8K words, 50 layers   (4-10x speedup)
+Test 31: 500 words, 500 layers (2-3x speedup)
+Test 32: 5K words, 120 layers  (3-8x speedup)
 
 
 ====================================
 DIAGNOSTIC TOOL (diagnostic.cpp)
 ====================================
 
-The diagnostic tool is NOT part of the main Makefile.
-It demonstrates how Pauli word count changes with different gate types.
+quick_test_stress.py
+    - Runs tests 23-32 on CPU and GPU
+    - Shows speedup comparison
+    - Usage: python3 quick_test_stress.py
 
-Compile manually:
-    g++ -DCPU_ONLY -std=c++17 -Wall -O2 src/diagnostic.cpp src/pauli.cpp -Isrc -o diagnostic
+performance_benchmark.py
+    - Detailed benchmark with timing
+    - Usage: python3 performance_benchmark.py
 
-Run:
-    ./diagnostic
+generate_report_figures.py
+    - Creates PNG plots (requires matplotlib)
+    - Usage: python3 generate_report_figures.py
 
-This shows:
-- Clifford gates keep Pauli word count constant
-- Rotation gates cause Pauli word expansion
-- Multiple rotations lead to exponential growth
+run_all_tests.py
+    - Simple test runner
+    - Usage: python3 run_all_tests.py
+
+
+REPORT GENERATION (for final report figures):
+
+1. Generate ALL figures at once:
+   python3 generate_all_figures.py
+   
+   This runs all scripts and creates all PNG plots for your report.
+
+2. Generate individual sections:
+   
+   Interactive Demo:
+   python3 interactive_demo.py
+   - Real-time CPU vs GPU comparison
+   - Interactive parameter adjustment
+   
+   Performance Analysis:
+   python3 performance_analysis.py
+   - Creates: performance_analysis.png, parameter_analysis.png
+   - Shows speedup vs qubits, depth, word count
+   
+   Algorithmic Visualization:
+   python3 algorithmic_visualization.py
+   - Creates: clifford_analysis.png, memory_analysis.png, pauli_evolution.png
+   - Shows Pauli word dynamics, memory patterns
+   
+   Correctness Validation:
+   python3 correctness_validation.py
+   - Creates: correctness_validation.png, validation_results.json
+   - Shows test suite results, error analysis
+   
+   Summary Figures:
+   python3 generate_report_figures.py
+   - Creates: timing_comparison.png, speedup_chart.png, etc.
+
+
+VIEWING PLOTS ON REMOTE SERVER:
+
+Since you're running on a remote server (ghc27), plots are saved as PNG files.
+You cannot view them directly on the server. Here are your options:
+
+Option 1: Transfer plots to local machine (RECOMMENDED)
+   # On remote server, after running scripts:
+   # Plots are saved in current directory as .png files
+   
+   # From your LOCAL machine, copy plots:
+   scp arulm@ghc27.ghc.andrew.cmu.edu:~/private/15418/Parallelizing-Pauli-Paths/*.png ./
+   
+   # Or copy all at once:
+   scp arulm@ghc27.ghc.andrew.cmu.edu:~/private/15418/Parallelizing-Pauli-Paths/*.png ~/Downloads/
+
+Option 2: Use X11 forwarding (if available)
+   # SSH with X11 forwarding:
+   ssh -X arulm@ghc27.ghc.andrew.cmu.edu
+   
+   # Then run scripts - plots will open in windows
+   # (May be slow over network)
+
+Option 3: Use a Jupyter notebook (if available)
+   # Convert plots to display in notebook
+   # Or use matplotlib inline backend
+
+
+INSTALLING MATPLOTLIB ON REMOTE SERVER:
+
+If matplotlib is not installed:
+   pip install --user matplotlib
+   
+   Or if you have sudo:
+   sudo pip install matplotlib
+
+
+GENERATED PLOT FILES:
+
+After running the scripts, you'll have these PNG files:
+   - performance_analysis.png
+   - parameter_analysis.png
+   - clifford_analysis.png
+   - memory_analysis.png
+   - pauli_evolution.png
+   - correctness_validation.png
+   - timing_comparison.png
+   - speedup_chart.png
+   - performance_scaling.png
+   - report_summary.png
+   - validation_results.json (data file)
+
+All plots are saved in the project root directory.
 
 
 ====================================
@@ -196,88 +254,40 @@ If you need to compile manually without the Makefile:
 GPU-SPECIFIC NOTES
 ====================================
 
-- GPU version uses CUDA kernels for parallel Pauli word propagation
-- Requires CUDA runtime library (libcudart)
-- GPU architecture is set to compute_61 (adjust in Makefile if needed)
-- Maximum of 1280 Pauli words supported (MAX_PAULI_WORDS = 1280)
-- Uses 128 threads per block (THREADS_PER_BLOCK = 128)
-- If compilation fails, check CUDA_PATH in Makefile matches your installation
-- GPU compilation must be done on a system with CUDA installed (e.g., SSH to ghc38)
+# Build
+cd src
+make clean && make all
+cd ..
+
+# Test GPU
+./pauli_propagation_gpu.exe 23 gpu
+# Output: [GPU] Propagation completed in 0.5 seconds
+
+# Test CPU
+./pauli_propagation_gpu.exe 23 cpu
+# Output: [CPU] Propagation completed in 5.0 seconds
+
+# Run full benchmark
+python3 quick_test_stress.py
 
 
 ====================================
 TROUBLESHOOTING
 ====================================
 
-"nvcc: command not found"
-    - CUDA is not installed or not in PATH
-    - SSH to ghc38.ghc.andrew.cmu.edu for GPU compilation
+"pauli_propagation_gpu.exe not found"
+    - Make sure you ran: cd src && make all
+    - Executable is in project root, not src/
 
-"cannot find -lcudart"
-    - CUDA runtime library not found
-    - Check CUDA_PATH in Makefile (default: /usr/local/cuda-11.7)
-    - Verify CUDA is properly installed
+"nvcc not found"
+    - CUDA not installed or not in PATH
+    - Use a machine with CUDA (e.g., ghc27.ghc.andrew.cmu.edu)
 
-Build succeeds but tests fail:
-    - Ensure you're using -O2 optimization flag
-    - Check that all source files are up to date
-    - Try 'make clean && make all' to rebuild from scratch
+No GPU speedup:
+    - Make sure you're using GPU mode: ./pauli_propagation_gpu.exe 23 gpu
+    - Check nvidia-smi to verify GPU is available
+    - Stress tests 23-32 show best speedup
 
-GPU tests show no speedup:
-    - Verify GPU is actually being used (check nvidia-smi)
-    - Try heavy tests (23-27) which show clearer GPU advantage
-    - Check for memory transfer overhead
-
-
-====================================
-FILE DESCRIPTIONS
-====================================
-
-Source Files:
-- src/pauli.cpp         : Core CPU implementation of Pauli propagation
-- src/pauli.h           : Header file with data structures and declarations
-- src/pauli_gpu.cu      : GPU/CUDA implementation of Pauli propagation
-- src/pauli_gpu.h       : GPU-specific header file
-- src/main.cpp          : Main entry point, command-line parsing
-- src/tests.cpp         : Test suite with 27 tests
-- src/diagnostic.cpp    : Standalone diagnostic tool
-- src/gates.cu_inl      : CUDA inline gate implementations
-- src/exclusiveScan.cu_inl : CUDA parallel scan implementation
-
-Build Files:
-- Makefile              : Main build configuration
-- build/                : Directory for compiled object files (created by make)
-
-Executables:
-- pauli_sim             : Main simulator (CPU + GPU)
-- diagnostic            : Diagnostic tool (CPU only)
-
-
-====================================
-SUMMARY
-====================================
-
-Most common workflows:
-
-1. Build and run all tests on CPU:
-    make all
-    ./pauli_sim -c
-
-2. Build and run all tests on GPU:
-    make all
-    ./pauli_sim
-
-3. Run specific heavy test on GPU:
-    make all
-    ./pauli_sim -t 27           # HEAVY E (extreme test)
-
-4. Run specific test on CPU:
-    make all
-    ./pauli_sim -c -t 5         # Run test 5 on CPU
-
-5. Clean and rebuild:
-    make clean
-    make all
-
-6. Quick CUDA compilation check:
-    make compile-test
+Python script errors:
+    - Make sure executable exists: ls pauli_propagation_gpu.exe
+    - Install matplotlib for plots: pip install matplotlib

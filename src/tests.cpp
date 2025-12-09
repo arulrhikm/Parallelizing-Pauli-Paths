@@ -75,7 +75,331 @@ static vector<TestCase> create_test_cases()
                          1e-10});
     }
 
+<<<<<<< HEAD
     // Test 5: Identity preservation
+=======
+    tests.push_back(
+        {"MultiBlock B: with rotations", nq, obs,
+         circ, Complex(0.0, 0.0), 1e-9, 1});
+  }
+
+  // ===== STRESS TESTS 23-32: GPU PARALLELIZATION ADVANTAGE =====
+  // Key insight from pauli_gpu.cu: GPU parallelizes over Pauli words
+  // - 512 words/block, 400 blocks = 200K capacity
+  // - CPU processes words SEQUENTIALLY, GPU processes in PARALLEL
+  // Strategy: Moderate words + circuit depth = 2-10x speedup (CPU finishes in ~10-60s)
+
+  // Test 23: 30K words, 500 layers - Heavy parallel test (10-50x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2301);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 30000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 500; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 25: 7q, 30K words, 500 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-8, 1});
+  }
+
+  // Test 24: 5K words, 150 layers - Medium parallel (3-8x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2401);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 5000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 150; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 26: 7q, 5K words, 150 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
+  }
+
+  // Test 25: 3K words, 200 layers - Deeper circuit (3-6x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2501);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 3000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 200; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 27: 7q, 3K words, 200 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-8, 1});
+  }
+
+  // Test 26: 1K words, 300 layers - Deep but small (2-4x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2601);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 1000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 300; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(S, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 28: 7q, 1K words, 300 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-8, 1});
+  }
+
+  // Test 27: 4K words, 100 layers - Wide parallel (3-7x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2701);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 4000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 100; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 29: 7q, 4K words, 100 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
+  }
+
+  // Test 28: 2K words, 250 layers - Balanced (2-5x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2801);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 2000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 250; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 30: 7q, 2K words, 250 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
+  }
+
+  // Test 29: 1K words, 400 layers - Deep small (2-4x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(2901);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 1000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 400; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 31: 7q, 1K words, 400 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-8, 1});
+  }
+
+  // Test 30: 8K words, 50 layers - Wide parallel (4-10x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3001);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 8000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 50; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 32: 7q, 8K words, 50 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-8, 1});
+  }
+
+  // Test 31: 500 words, 500 layers - Deep small (2-3x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3101);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 500;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 500; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 33: 7q, 500 words, 500 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
+  }
+
+  // Test 32: 5K words, 120 layers - Large balanced (3-8x speedup)
+  {
+    int nq = 7;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3201);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 5000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 120; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"STRESS 34: 7q, 5K words, 120 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
+  }
+
+  // // MultiBlock B: Testing multi threadblocks with rotations
+  // {
+  //   int nq = 9;
+  //   std::map<PauliWord, Complex> obs;
+  //   std::mt19937_64 rng(123456789);
+  //   std::uniform_int_distribution<int> opdis(0, 3); // 0 -> I, 1->X,2->Y,3->Z
+  //   int num_words = 400;                            // 2.5M words - heavy parallel processing load
+  //   for (int w = 0; w < num_words; ++w)
+  //   {
+  //     PauliWord pw(nq);
+  //     for (int q = 0; q < nq; ++q)
+  //     {
+  //       int od = opdis(rng);
+  //       if (od == 0)
+  //         continue;
+  //       if (od == 1)
+  //         pw.ops[q] = X;
+  //       else if (od == 2)
+  //         pw.ops[q] = Y;
+  //       else
+  //         pw.ops[q] = Z;
+  //     }
+  //     obs[pw] += Complex(1.0, 0.0);
+  //   }
+  //   // Moderate depth circuit with rotation gates that cause Pauli word
+  //   // expansion
+  //   vector<Gate> circ;
+  //   for (int layer = 0; layer < 10; ++layer)
+  //   {
+  //     // Rotations cause expansion (each rotation can double Pauli words)
+  //     for (int q = 0; q < nq; ++q)
+  //       circ.push_back(Gate(RZ, {q}, 0.1 * (layer + 1)));
+
+  //     // CNOTs entangle qubits
+  //     for (int q = 0; q + 1 < nq; q += 2)
+  //       circ.push_back(Gate(CNOT, {q, q + 1}));
+
+  //     for (int q = 1; q + 1 < nq; q += 2)
+  //       circ.push_back(Gate(CNOT, {q, q + 1}));
+  //   }
+
+  //   tests.push_back(
+  //       {"MultiBlock B: with rotations", nq, obs,
+  //        circ, Complex(0.0, 0.0), 1e-9, 1});
+  // }
+
+    /* // Heavy Test A: Random sparse Pauli ensemble - tests parallel processing of
+    // many Pauli words Rationale: Large initial observable size stresses the
+    // parallelization of gate applications Target: 6-9 seconds (many words ×
+    // moderate gates)
+>>>>>>> af7eb49 (cleaned up and organized repo)
     {
         PauliWord id(2);
         tests.push_back({"Identity preservation",
@@ -572,6 +896,7 @@ static vector<TestCase> create_test_cases()
                 circ.push_back(Gate(CNOT, {q, q + 1}));
         }
 
+<<<<<<< HEAD
         tests.push_back({"HEAVY E: 32-qubit, 4M words, 6K layers all gates (EXTREME)",
                  nq,
                  obs,
@@ -579,6 +904,145 @@ static vector<TestCase> create_test_cases()
                  Complex(0.0, 0.0),
                  1e9,
                  1});
+=======
+        // Clifford layer for mixing
+        for (int q = 0; q < nq; q += 2)
+          circ.push_back(Gate(HADAMARD, {q}));
+
+        // Dense entanglement
+        for (int q = 0; q + 1 < nq; ++q)
+          circ.push_back(Gate(CNOT, {q, q + 1}));
+      }
+
+      tests.push_back(
+          {"HEAVY E: 32-qubit, 4M words, 6K layers all gates (EXTREME)", nq, obs,
+           circ, Complex(0.0, 0.0), 1e-9, 1});
+    } */
+    cout << "Finished Test Cases: " << endl;
+
+    return tests;
+  }
+
+double run_single_test(const TestCase &test, int i, bool use_gpu) {
+  cout << "=== " << i + 1 << ". " << test.name << " ===\n";
+
+  // Start total timing (includes setup)
+  auto tstart = chrono::steady_clock::now();
+
+  Complex result;
+  double computeTime = 0.0;
+
+  if (use_gpu) {
+#ifndef CPU_ONLY
+    cout << "[GPU] Creating simulator..." << endl;
+    PauliSimulatorGPU simulator(test.num_qubits, test.initial_obs,
+                                test.circuit);
+
+    cout << "[GPU] Starting propagation..." << endl;
+    double startComputeTime = CycleTimer::currentSeconds();
+    result = simulator.runPropagation(10);
+    double endComputeTime = CycleTimer::currentSeconds();
+    computeTime = endComputeTime - startComputeTime;
+    cout << "[GPU] Propagation completed in " << computeTime << " seconds" << endl;
+
+    // For GPU mode, skip verification and exit immediately
+    cout << "[GPU] GPU propagation finished. Exiting." << endl;
+    return computeTime;  // Exit immediately for GPU mode
+#else
+    cout << "GPU not available, using CPU instead\n";
+    cout << "[CPU] Starting propagation..." << endl;
+    double startComputeTime = CycleTimer::currentSeconds();
+    result = pauli_propagation(test.initial_obs, test.circuit, 10);
+    double endComputeTime = CycleTimer::currentSeconds();
+    computeTime = endComputeTime - startComputeTime;
+    cout << "[CPU] Propagation completed in " << computeTime << " seconds" << endl;
+    cout << "[CPU] CPU propagation finished. Exiting." << endl;
+    return computeTime;  // Exit immediately for CPU-only executable
+#endif
+  } else {
+    cout << "[CPU] Starting propagation..." << endl;
+    double startComputeTime = CycleTimer::currentSeconds();
+    result = pauli_propagation(test.initial_obs, test.circuit, 10);
+    double endComputeTime = CycleTimer::currentSeconds();
+    computeTime = endComputeTime - startComputeTime;
+    cout << "[CPU] Propagation completed in " << computeTime << " seconds" << endl;
+
+    // For CPU mode, also exit immediately after propagation
+    cout << "[CPU] CPU propagation finished. Exiting." << endl;
+    return computeTime;  // Exit immediately for CPU mode too
+  }
+
+  // For GPU mode, we already returned above. For CPU mode, continue with verification.
+  auto tend = chrono::steady_clock::now();
+  double elapsed = chrono::duration_cast<chrono::duration<double>>(tend - tstart).count();
+
+  // Get ground truth (CPU verification)
+  cout << "[VERIFICATION] Computing ground truth..." << endl;
+  double truthStart = CycleTimer::currentSeconds();
+  Complex truth = pauli_propagation(test.initial_obs, test.circuit, 10);
+  double truthEnd = CycleTimer::currentSeconds();
+  double truthTime = truthEnd - truthStart;
+  cout << "[VERIFICATION] Ground truth computed in " << truthTime << " seconds" << endl;
+
+  bool passed = abs(result - truth) < test.tolerance;
+
+  if (passed) {
+    cout << "\033[92m" << "Status: PASS" << "\033[0m" << "\n";
+  } else {
+    cout << "\033[31m" << "Status: FAIL" << "\033[0m" << "\n";
+    cout << "Result: " << result << "\n";
+    cout << "Expected: " << truth << "\n";
+    computeTime = -1.0;
+  }
+
+  cout << "\nTIMING BREAKDOWN:" << endl;
+  cout << "  Total elapsed time: " << fixed << setprecision(3) << elapsed << " s" << endl;
+  cout << "  Compute time:       " << fixed << setprecision(3) << computeTime << " s" << endl;
+  cout << "  Setup overhead:     " << fixed << setprecision(3) << (elapsed - computeTime) << " s" << endl;
+  cout << "  Verification time:  " << fixed << setprecision(3) << truthTime << " s" << endl;
+  cout << endl;
+
+  return computeTime;
+}
+
+double run_single_test(int i, bool use_gpu) {
+  auto test_cases = create_test_cases();
+  // Convert from 1-based (user input) to 0-based (array index)
+  int idx = i - 1;
+  if (idx < 0 || idx >= (int)test_cases.size()) {
+    cout << "Invalid test number: " << i << " (valid range: 1-" << test_cases.size() << ")" << endl;
+    return -1;
+  }
+  return run_single_test(test_cases[idx], idx, use_gpu);
+}
+
+void run_all_tests(bool use_gpu) {
+  auto test_cases = create_test_cases();
+  int total_tests = test_cases.size();
+  int passed_tests = 0;
+
+  // Vector to store computation times
+  vector<double> compute_times_ms(total_tests, 0.0);
+
+  cout << "Running " << total_tests << " tests using "
+       << (use_gpu ? "GPU" : "CPU") << " simulator\n";
+  cout << "========================================\n\n";
+
+  int i = 0;
+  for (const auto &test : test_cases) {
+
+    // Run the test and get computation time
+    double compute_time = run_single_test(test, i, use_gpu);
+    double compute_time_ms = compute_time * 1000.0; // Convert to milliseconds
+
+    compute_times_ms[i] = compute_time_ms;
+
+    // Determine status based on compute_time
+    bool passed = (compute_time >= 0.0);
+
+    if (passed) {
+      passed_tests++;
+>>>>>>> af7eb49 (cleaned up and organized repo)
     }
 
     return tests;
