@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick Stress Test Check - Tests 23-32 CPU vs GPU
+Quick Stress Test Check - Tests 25-34 CPU vs GPU
 """
 
 import subprocess
@@ -10,7 +10,6 @@ from pathlib import Path
 
 def run_test(test_num, mode):
     """Run a single test and return timing"""
-    # Use the GPU executable for both modes (it supports both cpu and gpu)
     exe = "./pauli_propagation_gpu.exe"
     cmd = [exe, str(test_num), mode]
     
@@ -34,7 +33,7 @@ def run_test(test_num, mode):
 
 def main():
     print("=" * 70)
-    print("QUICK STRESS TEST CHECK (Tests 23-32)")
+    print("QUICK STRESS TEST CHECK (Tests 25-34)")
     print("=" * 70)
     
     # Check executable
@@ -50,7 +49,7 @@ def main():
     
     results = []
     
-    for test_num in range(23, 33):
+    for test_num in range(25, 35):
         print(f"Test {test_num}: ", end="", flush=True)
         
         # Run CPU mode
@@ -104,3 +103,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

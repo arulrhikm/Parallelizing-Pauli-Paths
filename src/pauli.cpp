@@ -346,11 +346,11 @@ truncate_pauli_words(const map<PauliWord, Complex> &in, int max_w)
 // Expectation value on |0...0⟩: only Z/I survive.
 Complex compute_expectation(const PauliWord &pw)
 {
-    for (auto p : pw.ops)
-    {
-        if (p == X || p == Y)
-            return 0.0;
-    }
+    // for (auto p : pw.ops)
+    // {
+    //     if (p == X || p == Y)
+    //         return 0.0;
+    // }
     return pw.phase;
 }
 
@@ -369,6 +369,7 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
     // cout << "===============\n";
 
     // Go backwards through gates
+    // cout << "CPU Start - Num Words: " << obs.size() << '\n';
     for (int i = (int)circuit.size() - 1; i >= 0; --i)
     {
         const Gate &g = circuit[i];
@@ -398,9 +399,8 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
                 filtered[pw] = c;
 
         }
-        
         obs = truncate_pauli_words(filtered, max_weight);
-
+        // cout << "Gate " << i << " - Num Words: " << obs.size() << '\n';
         // cout << "===============\n";
         // for (auto &[pw, c] : obs)
         // {
@@ -411,6 +411,7 @@ Complex pauli_propagation(const map<PauliWord, Complex> &init,
     }
 
     // Compute expectation value
+    // cout << "Ended with " << obs.size() << " words" << endl;
     Complex exp_val = 0.0;
     for (auto &[pw, c] : obs)
     {

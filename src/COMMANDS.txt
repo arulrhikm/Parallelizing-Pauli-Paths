@@ -36,10 +36,10 @@ QUICK START - USING MAKEFILE
    ./pauli_propagation_gpu.exe 23 cpu
 
 4. Run Python benchmark:
-   python3 quick_test_stress.py
+   python3 scripts/quick_test_stress.py
 
 5. Generate all report figures:
-   python3 generate_all_figures.py
+   python3 scripts/generate_all_figures.py
 
 
 ====================================
@@ -109,52 +109,52 @@ DIAGNOSTIC TOOL (diagnostic.cpp)
 quick_test_stress.py
     - Runs tests 23-32 on CPU and GPU
     - Shows speedup comparison
-    - Usage: python3 quick_test_stress.py
+    - Usage: python3 scripts/quick_test_stress.py
 
 performance_benchmark.py
     - Detailed benchmark with timing
-    - Usage: python3 performance_benchmark.py
+    - Usage: python3 scripts/performance_benchmark.py
 
 generate_report_figures.py
     - Creates PNG plots (requires matplotlib)
-    - Usage: python3 generate_report_figures.py
+    - Usage: python3 scripts/generate_report_figures.py
 
 run_all_tests.py
     - Simple test runner
-    - Usage: python3 run_all_tests.py
+    - Usage: python3 scripts/run_all_tests.py
 
 
 REPORT GENERATION (for final report figures):
 
 1. Generate ALL figures at once:
-   python3 generate_all_figures.py
+   python3 scripts/generate_all_figures.py
    
    This runs all scripts and creates all PNG plots for your report.
 
 2. Generate individual sections:
    
    Interactive Demo:
-   python3 interactive_demo.py
+   python3 scripts/interactive_demo.py
    - Real-time CPU vs GPU comparison
    - Interactive parameter adjustment
    
    Performance Analysis:
-   python3 performance_analysis.py
+   python3 scripts/performance_analysis.py
    - Creates: performance_analysis.png, parameter_analysis.png
    - Shows speedup vs qubits, depth, word count
    
    Algorithmic Visualization:
-   python3 algorithmic_visualization.py
+   python3 scripts/algorithmic_visualization.py
    - Creates: clifford_analysis.png, memory_analysis.png, pauli_evolution.png
    - Shows Pauli word dynamics, memory patterns
    
    Correctness Validation:
-   python3 correctness_validation.py
+   python3 scripts/correctness_validation.py
    - Creates: correctness_validation.png, validation_results.json
    - Shows test suite results, error analysis
    
    Summary Figures:
-   python3 generate_report_figures.py
+   python3 scripts/generate_report_figures.py
    - Creates: timing_comparison.png, speedup_chart.png, etc.
 
 
@@ -268,7 +268,7 @@ cd ..
 # Output: [CPU] Propagation completed in 5.0 seconds
 
 # Run full benchmark
-python3 quick_test_stress.py
+python3 scripts/quick_test_stress.py
 
 
 ====================================
