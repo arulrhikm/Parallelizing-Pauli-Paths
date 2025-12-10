@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Final Report - P3</title>
     <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
     <style>
         table {
             width: 100%;
@@ -13,23 +17,24 @@
             margin: 20px 0;
             font-size: 15px;
         }
-        
-        th, td {
+
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
         }
-        
+
         th {
             background-color: #f8f9fa;
             font-weight: 600;
             color: #000;
         }
-        
+
         tr:hover {
             background-color: #fafafa;
         }
-        
+
         code {
             background-color: #f4f4f4;
             padding: 2px 6px;
@@ -37,7 +42,7 @@
             font-family: 'Courier New', monospace;
             font-size: 14px;
         }
-        
+
         pre {
             background-color: #f8f9fa;
             padding: 20px;
@@ -47,17 +52,17 @@
             font-size: 14px;
             line-height: 1.5;
         }
-        
+
         .content-section ul {
             margin-left: 20px;
             margin-bottom: 16px;
         }
-        
+
         .content-section li {
             margin-bottom: 8px;
             line-height: 1.7;
         }
-        
+
         .content-section h3 {
             font-size: 22px;
             font-weight: 600;
@@ -65,7 +70,7 @@
             margin-bottom: 16px;
             color: #000;
         }
-        
+
         .content-section h4 {
             font-size: 18px;
             font-weight: 600;
@@ -73,7 +78,7 @@
             margin-bottom: 12px;
             color: #333;
         }
-        
+
         blockquote {
             margin: 20px 0;
             padding-left: 20px;
@@ -81,7 +86,7 @@
             color: #666;
             font-style: italic;
         }
-        
+
         .summary-box {
             background-color: #f8f9fa;
             padding: 24px;
@@ -89,7 +94,7 @@
             border: 1px solid #e0e0e0;
             margin: 20px 0;
         }
-        
+
         .summary-box p {
             margin-bottom: 8px;
         }
@@ -137,6 +142,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="nav">
         <div class="nav-container">
@@ -156,17 +162,29 @@
         </div>
 
         <div class="abstract">
-            <strong>Abstract:</strong> We present a GPU-accelerated implementation of the Pauli path propagation algorithm for quantum circuit simulation. Our CUDA implementation achieves speedups of up to 626× over a single-threaded CPU baseline on circuits with 1000+ initial Pauli words, with an average speedup of 213× across our stress test suite. Key contributions include a multi-block dynamic work distribution algorithm, efficient inter-block coordination through word-count-only transfers, and parallel truncation using prefix sums.
+            <strong>Abstract:</strong> We present a GPU-accelerated implementation of the Pauli path propagation
+            algorithm for quantum circuit simulation. Our CUDA implementation achieves speedups of up to 626× over a
+            single-threaded CPU baseline on circuits with 1000+ initial Pauli words, with an average speedup of 213×
+            across our stress test suite. Key contributions include a multi-block dynamic work distribution algorithm,
+            efficient inter-block coordination through word-count-only transfers, and parallel truncation using prefix
+            sums.
         </div>
 
         <div class="content-section">
             <h2>Summary</h2>
-            <p>We implemented a GPU-accelerated Pauli path propagation algorithm for quantum circuit simulation using CUDA on NVIDIA GPUs and compared it against a single-threaded CPU baseline in C++. Our CUDA implementation on the GHC cluster machines (NVIDIA GeForce RTX 2080 GPUs) achieves speedups of up to 626× on large-scale simulations, with an average speedup of 213× across our stress test suite containing circuits with 500–30,000 initial Pauli words and 50–500 layers.</p>
-            
+            <p>We implemented a GPU-accelerated Pauli path propagation algorithm for quantum circuit simulation using
+                CUDA on NVIDIA GPUs and compared it against a single-threaded CPU baseline in C++. Our CUDA
+                implementation on the GHC cluster machines (NVIDIA GeForce RTX 2080 GPUs) achieves speedups of up to
+                626× on large-scale simulations, with an average speedup of 213× across our stress test suite containing
+                circuits with 500–30,000 initial Pauli words and 50–500 layers.</p>
+
             <p><strong>Project deliverables include:</strong></p>
             <ul>
-                <li>Fully functional CPU simulator (<code>pauli.cpp</code>, ~436 lines) serving as single-threaded baseline</li>
-                <li>GPU simulator using CUDA (<code>pauli_gpu.cu</code> with device operations in <code>gates.cu_inl</code>)</li>
+                <li>Fully functional CPU simulator (<code>pauli.cpp</code>, ~436 lines) serving as single-threaded
+                    baseline</li>
+                <li>GPU simulator using CUDA (<code>pauli_gpu.cu</code> with device operations in
+                    <code>gates.cu_inl</code>)
+                </li>
                 <li>Comprehensive test suite with 34+ test cases validating numerical correctness</li>
                 <li>Performance benchmarks comparing CPU vs GPU across various circuit configurations</li>
                 <li>Python visualization tools demonstrating Pauli word dynamics and performance characteristics</li>
@@ -176,24 +194,54 @@
 
         <div class="content-section">
             <h2>Background</h2>
-            
+
             <h3>Motivation</h3>
-            <p>In quantum computing, a central computational task is estimating expectation values of observables. Given a quantum circuit U that prepares a state |ψ⟩ = U|0⟩, we seek to compute ⟨Ĥ⟩ = ⟨ψ|Ĥ|ψ⟩ where Ĥ is the observable of interest, typically decomposed as a sum of Pauli words. This expectation value is fundamental in quantum algorithms such as variational quantum eigensolvers for quantum chemistry and quantum approximate optimization algorithms.</p>
-            
-            <p>Classical simulation of quantum circuits faces exponential state space growth—an n-qubit system requires tracking 2ⁿ complex amplitudes. The Pauli path method offers an alternative approach that can be more tractable for certain circuit types by tracking the evolution of observables rather than the full quantum state.</p>
+            <p>In quantum computing, a central computational task is estimating expectation values of observables. Given
+                a quantum circuit \( U \) that prepares a state \( \lvert \psi \rangle = U \lvert 0 \rangle \), we seek
+                to compute \( \langle \hat{H} \rangle = \langle \psi \lvert \hat{H} \lvert \psi \rangle \) where \(
+                \hat{H} \) is the
+                observable of interest, typically decomposed as a sum of Pauli words. This expectation value is
+                fundamental in quantum algorithms such as variational quantum eigensolvers for quantum chemistry and
+                quantum approximate optimization algorithms.</p>
+
+            <p>Classical simulation of quantum circuits faces exponential state space growth—an \( n \)-qubit system
+                requires
+                tracking \( 2^n \) complex amplitudes. The Pauli path method offers an alternative approach that can be
+                more
+                tractable for certain circuit types by tracking the evolution of observables rather than the full
+                quantum state.</p>
 
             <h3>Pauli Words and Observables</h3>
-            <p>A Pauli word is a tensor product of single-qubit Pauli matrices {I, X, Y, Z} acting on each qubit. For an n-qubit system, a Pauli word has the form P = P₁ ⊗ P₂ ⊗ ⋯ ⊗ Pₙ. The Pauli matrices represent: I (identity), X (bit-flip), Y (combined bit and phase flip), Z (phase-flip). Any observable Ĥ can be expressed as a linear combination of Pauli words: Ĥ = Σᵢ cᵢPᵢ.</p>
+            <p>A Pauli word is a tensor product of single-qubit Pauli matrices {I, X, Y, Z} acting on each qubit. For an
+                \( n \)-qubit system, a Pauli word has the form \( P = P_1 \otimes P_2 \otimes \cdots \otimes P_n \).
+                The Pauli matrices represent: I
+                (identity), X (bit-flip), Y (combined bit and phase flip), Z (phase-flip). Any observable \( \hat{H} \)
+                can be
+                expressed as a linear combination of Pauli words: \( \hat{H} = \sum_i c_i P_i \).</p>
 
             <h3>Key Data Structures</h3>
-            <p><strong>PauliWord:</strong> Contains a vector of Pauli operators (one per qubit, encoded as enum: I=0, X=1, Y=2, Z=3) and a complex phase coefficient. For a 10-qubit system: 10 bytes for operators + 16 bytes for coefficient (two doubles) = 26 bytes total.</p>
-            <p><strong>Gate:</strong> Represents quantum gates with gate type (Hadamard, CNOT, RX, RY, RZ, S, T), target qubits (1-2 integers), and rotation angle for parametric gates.</p>
+            <p><strong>PauliWord:</strong> Contains a vector of Pauli operators (one per qubit, encoded as enum: I=0,
+                X=1, Y=2, Z=3) and a complex phase coefficient. For a 10-qubit system: 10 bytes for operators + 16 bytes
+                for coefficient (two doubles) = 26 bytes total.</p>
+            <p><strong>Gate:</strong> Represents quantum gates with gate type (Hadamard, CNOT, RX, RY, RZ, S, T), target
+                qubits (1-2 integers), and rotation angle for parametric gates.</p>
 
             <h3>Key Operations</h3>
             <ul>
-                <li><strong>Gate Conjugation</strong> (computationally expensive): Each Pauli word is transformed via P' = G†PG. Clifford gates (H, CNOT, S) produce exactly one output word. The T gate also produces a single output with complex phase factors. Non-Clifford rotation gates (RX, RY, RZ) produce a linear combination of two Pauli words (e.g., X → cos(θ)X + sin(θ)Y under RZ), causing word splitting.</li>
-                <li><strong>Weight-Based Truncation</strong> (memory control): The weight equals the number of non-identity components. Truncation discards words exceeding a weight threshold, necessary because k rotation gates can produce up to 2ᵏ terms.</li>
-                <li><strong>Expectation Value Computation</strong> (final step): After propagating through all gates, the final expectation value is computed by summing the coefficients of all surviving Pauli words.</li>
+                <li><strong>Gate Conjugation</strong> (computationally expensive): Each Pauli word is transformed via \(
+                    P'
+                    = G^\dagger P G \). Clifford gates (H, CNOT, S) produce exactly one output word. The T gate also
+                    produces a
+                    single output with complex phase factors. Non-Clifford rotation gates (RX, RY, RZ) produce a linear
+                    combination of two Pauli words (e.g., \( X \to \cos(\theta)X + \sin(\theta)Y \) under RZ), causing
+                    word splitting.</li>
+                <li><strong>Weight-Based Truncation</strong> (memory control): The weight equals the number of
+                    non-identity components. Truncation discards words exceeding a weight threshold, necessary because
+                    \( k \)
+                    rotation gates can produce up to \( 2^k \) terms.</li>
+                <li><strong>Expectation Value Computation</strong> (final step): After propagating through all gates,
+                    the final expectation value is computed by summing the coefficients of all surviving Pauli words.
+                </li>
             </ul>
 
             <h3>Algorithm Input and Output</h3>
@@ -203,26 +251,39 @@
                 <li>Initial observable: 1-1000+ Pauli words with coefficients</li>
                 <li>Maximum weight threshold: Typically 4-8</li>
             </ul>
-            <p><strong>Output:</strong> Complex number representing ⟨Ĥ⟩</p>
+            <p><strong>Output:</strong> Complex number representing \( \langle \hat{H} \rangle \)</p>
 
             <h3>Parallelism Analysis</h3>
             <ul>
-                <li><strong>Data Parallelism:</strong> Each Pauli word evolves independently under gate application with zero inter-word dependencies—thousands of words can be processed simultaneously. This is where >90% of computation time is spent.</li>
-                <li><strong>Dependencies:</strong> Gates must be applied in reverse order—all words must complete gate g before gate g-1 begins. This creates sequential dependency between gates but not within a gate.</li>
-                <li><strong>SIMD Amenability:</strong> Clifford gates achieve near-perfect SIMD execution since all threads perform the same transformation. Non-Clifford gates introduce branch divergence (estimated 20–30% warp efficiency loss).</li>
-                <li><strong>Locality:</strong> Each word accesses only its own data plus shared gate information, enabling coalesced memory access patterns.</li>
-                <li><strong>Workload Growth:</strong> With N initial words and k non-Clifford gates, worst-case count is N · 2ᵏ, motivating truncation strategies.</li>
+                <li><strong>Data Parallelism:</strong> Each Pauli word evolves independently under gate application with
+                    zero inter-word dependencies—thousands of words can be processed simultaneously. This is where >90%
+                    of computation time is spent.</li>
+                <li><strong>Dependencies:</strong> Gates must be applied in reverse order—all words must complete gate g
+                    before gate g-1 begins. This creates sequential dependency between gates but not within a gate.</li>
+                <li><strong>SIMD Amenability:</strong> Clifford gates achieve near-perfect SIMD execution since all
+                    threads perform the same transformation. Non-Clifford gates introduce branch divergence (estimated
+                    20–30% warp efficiency loss).</li>
+                <li><strong>Locality:</strong> Each word accesses only its own data plus shared gate information,
+                    enabling coalesced memory access patterns.</li>
+                <li><strong>Workload Growth:</strong> With \( N \) initial words and \( k \) non-Clifford gates,
+                    worst-case count is
+                    \( N \cdot 2^k \), motivating truncation strategies.</li>
             </ul>
-            <p>The computational bottleneck is gate conjugation applied to large numbers of words—perfectly suited for GPU parallelization.</p>
+            <p>The computational bottleneck is gate conjugation applied to large numbers of words—perfectly suited for
+                GPU parallelization.</p>
 
             <figure>
                 <img src="images/pauli_evolution.png" alt="Pauli word evolution">
-                <figcaption>Figure 1: Pauli word count evolution through circuit execution. <strong>Clifford-only</strong>: constant word count. <strong>Mixed</strong>: moderate growth from occasional rotations. <strong>Rotation-heavy</strong>: exponential expansion requiring truncation.</figcaption>
+                <figcaption>Figure 1: Pauli word count evolution through circuit execution.
+                    <strong>Clifford-only</strong>: constant word count. <strong>Mixed</strong>: moderate growth from
+                    occasional rotations. <strong>Rotation-heavy</strong>: exponential expansion requiring truncation.
+                </figcaption>
             </figure>
 
             <figure>
                 <img src="images/clifford_analysis.png" alt="Gate conjugation behavior">
-                <figcaption>Figure 2: Per-gate transformation rules. Clifford gates (H, CNOT, S) and T gate produce one output word each. Rotation gates (RX, RY, RZ) produce two terms.</figcaption>
+                <figcaption>Figure 2: Per-gate transformation rules. Clifford gates (H, CNOT, S) and T gate produce one
+                    output word each. Rotation gates (RX, RY, RZ) produce two terms.</figcaption>
             </figure>
         </div>
 
@@ -230,40 +291,60 @@
             <h2>Approach</h2>
 
             <h3>High-Level Overview</h3>
-            <p>Our final solution implemented the Pauli Path Simulation using CUDA programming to unlock performance on the GPU. At a high level, the algorithm maintains a collection of Pauli words and their corresponding coefficients, which must be transformed in memory for each specified gate. We parallelized these so that <strong>each thread was responsible for transforming one Pauli word</strong>.</p>
-            
+            <p>Our final solution implemented the Pauli Path Simulation using CUDA programming to unlock performance on
+                the GPU. At a high level, the algorithm maintains a collection of Pauli words and their corresponding
+                coefficients, which must be transformed in memory for each specified gate. We parallelized these so that
+                <strong>each thread was responsible for transforming one Pauli word</strong>.
+            </p>
+
             <p>Crucially, the number of terms can change during execution through two mechanisms:</p>
             <ol>
-                <li><strong>Rotation gate splitting:</strong> Non-Clifford gates (RX, RY, RZ) cause certain Pauli words to "split" and become two separate Pauli words with different coefficients.</li>
-                <li><strong>Truncation:</strong> After each gate application, weight-based truncation reduces the number of Pauli words we consider in the next step.</li>
+                <li><strong>Rotation gate splitting:</strong> Non-Clifford gates (RX, RY, RZ) cause certain Pauli words
+                    to "split" and become two separate Pauli words with different coefficients.</li>
+                <li><strong>Truncation:</strong> After each gate application, weight-based truncation reduces the number
+                    of Pauli words we consider in the next step.</li>
             </ol>
-            <p>All gate transformations and truncation operations were done cooperatively within thread blocks using shared memory to improve performance. Implementing inter-block coordination efficiently became the main concern for achieving good performance.</p>
+            <p>All gate transformations and truncation operations were done cooperatively within thread blocks using
+                shared memory to improve performance. Implementing inter-block coordination efficiently became the main
+                concern for achieving good performance.</p>
 
             <h3>Technologies Used</h3>
             <ul>
                 <li><strong>Languages:</strong> C++ for CPU, CUDA C++ for GPU</li>
                 <li><strong>APIs:</strong> CUDA Runtime API, cuComplex library</li>
                 <li><strong>Build System:</strong> Makefile with NVCC compiler (<code>-O3 -arch=sm_75</code>)</li>
-                <li><strong>Target Hardware:</strong> GHC machines with NVIDIA GeForce RTX 2080 (8GB VRAM, 2944 CUDA cores, 46 SMs)</li>
+                <li><strong>Target Hardware:</strong> GHC machines with NVIDIA GeForce RTX 2080 (8GB VRAM, 2944 CUDA
+                    cores, 46 SMs)</li>
                 <li><strong>Tools:</strong> CUDA-GDB, Nsight Compute, nvprof</li>
                 <li><strong>Visualization:</strong> Python with Matplotlib</li>
             </ul>
 
             <h3>CPU Baseline Implementation</h3>
-            <p>Our CPU implementation (<code>pauli.cpp</code>, ~436 lines) uses <code>std::map&lt;PauliWord, Complex&gt;</code> for automatic deduplication. It processes gates in reverse order, applying conjugation rules sequentially with weight-based truncation after each non-Clifford gate. Time complexity is O(N · D · (q + log N)) where N is word count, D is circuit depth, and q is qubit count.</p>
-            <p>The main difference: the CPU version uses a hashmap to keep track of all words (enabling automatic deduplication), while our GPU version uses raw arrays that can be operated on in parallel where each thread handles a single Pauli word.</p>
+            <p>Our CPU implementation (<code>pauli.cpp</code>, ~436 lines) uses
+                <code>std::map&lt;PauliWord, Complex&gt;</code> for automatic deduplication. It processes gates in
+                reverse order, applying conjugation rules sequentially with weight-based truncation after each
+                non-Clifford gate. Time complexity is \( O(N \cdot D \cdot (q + \log N)) \) where \( N \) is word
+                count, \( D \) is circuit depth,
+                and \( q \) is qubit count.
+            </p>
+            <p>The main difference: the CPU version uses a hashmap to keep track of all words (enabling automatic
+                deduplication), while our GPU version uses raw arrays that can be operated on in parallel where each
+                thread handles a single Pauli word.</p>
 
             <h3>GPU Memory Layout</h3>
             <p>We use the following constants: q = qubits, T = 256 threads/block, B = 400 max blocks.</p>
-            
+
             <h4>Shared Memory Organization</h4>
             <p>Each thread block required:</p>
             <ul>
-                <li><strong>Pauli word storage:</strong> 2 × T × q bytes—each thread started with one word and could finish with two after a rotation gate</li>
+                <li><strong>Pauli word storage:</strong> 2 × T × q bytes—each thread started with one word and could
+                    finish with two after a rotation gate</li>
                 <li><strong>Coefficient storage:</strong> 2 × T × 16 bytes for the complex coefficients</li>
-                <li><strong>Prefix sum buffers:</strong> T × 8 bytes—we used the exact prefix sum implementation from Assignment 2, with <code>uint16_t</code> instead of <code>uint</code></li>
+                <li><strong>Prefix sum buffers:</strong> T × 8 bytes—we used the exact prefix sum implementation from
+                    Assignment 2, with <code>uint16_t</code> instead of <code>uint</code></li>
             </ul>
-            <p><strong>Total shared memory per block:</strong> (2q + 40) × T bytes. This was the main barrier to getting more work done per block.</p>
+            <p><strong>Total shared memory per block:</strong> (2q + 40) × T bytes. This was the main barrier to getting
+                more work done per block.</p>
 
             <h4>Global Memory Organization</h4>
             <p>Global memory was laid out such that each thread block had its own region:</p>
@@ -274,16 +355,21 @@
                 <li><strong>Word count array:</strong> B integers for inter-kernel communication</li>
                 <li><strong>Gate index:</strong> A single integer updated at each iteration</li>
             </ul>
-            <p><strong>Key design principle:</strong> Each block owns non-overlapping memory regions, eliminating inter-block synchronization.</p>
+            <p><strong>Key design principle:</strong> Each block owns non-overlapping memory regions, eliminating
+                inter-block synchronization.</p>
 
             <h3>Mapping to GPU Hardware</h3>
-            <p>We assign one CUDA thread per Pauli word, enabling parallel evolution of thousands of words simultaneously. Thread blocks of 256 threads process words in parallel, chosen to balance occupancy against shared memory availability.</p>
-            <p>For 10,000 words with 10 qubits: 10,000 threads total (~40 blocks), each block uses ~15KB shared memory, blocks execute independently across 46 SMs.</p>
+            <p>We assign one CUDA thread per Pauli word, enabling parallel evolution of thousands of words
+                simultaneously. Thread blocks of 256 threads process words in parallel, chosen to balance occupancy
+                against shared memory availability.</p>
+            <p>For 10,000 words with 10 qubits: 10,000 threads total (~40 blocks), each block uses ~15KB shared memory,
+                blocks execute independently across 46 SMs.</p>
 
             <h3>Algorithm and Operations</h3>
-            
+
             <h4>Initial Single-Block Approach (Abandoned)</h4>
-            <p>Single thread block with all words in shared memory. Limited to ~256 words due to 48KB shared memory limit. Achieved only 1.1–1.5× speedup—insufficient parallelism.</p>
+            <p>Single thread block with all words in shared memory. Limited to ~256 words due to 48KB shared memory
+                limit. Achieved only 1.1–1.5× speedup—insufficient parallelism.</p>
 
             <h4>Multi-Block Dynamic Algorithm (Final Approach)</h4>
             <p>To overcome the single-block limitation, we implemented a multi-block dynamic algorithm:</p>
@@ -297,11 +383,16 @@
                 <li>CPU reads only word counts (not full word data—this is the critical optimization)</li>
                 <li>CPU launches next kernel with updated configuration and block count</li>
             </ol>
-            <p><strong>Critical optimization:</strong> The CPU only has to load the number of words each thread block finished, not the words themselves. This drastically decreases the memory bandwidth between the CPU and the GPU—transferring just B integers (~1.6KB for B=400) instead of potentially megabytes of Pauli word data.</p>
+            <p><strong>Critical optimization:</strong> The CPU only has to load the number of words each thread block
+                finished, not the words themselves. This drastically decreases the memory bandwidth between the CPU and
+                the GPU—transferring just B integers (~1.6KB for B=400) instead of potentially megabytes of Pauli word
+                data.</p>
 
             <figure>
                 <img src="images/pauli-parallel-flow.jpg" alt="Multi-block algorithm flowchart" style="max-width: 60%;">
-                <figcaption>Figure 3: Flowchart of the multi-block dynamic algorithm showing work distribution across thread blocks, with shared memory for fast gate operations and global memory for inter-block coordination.</figcaption>
+                <figcaption>Figure 3: Flowchart of the multi-block dynamic algorithm showing work distribution across
+                    thread blocks, with shared memory for fast gate operations and global memory for inter-block
+                    coordination.</figcaption>
             </figure>
 
             <h3>Parallel Truncation with Prefix Sum</h3>
@@ -312,19 +403,29 @@
                 <li>Threads write their valid words to compacted positions in parallel</li>
                 <li>Final prefix sum value gives total valid count</li>
             </ol>
-            <p>We used the exact prefix sum implementation from Assignment 2, adapted to use <code>uint16_t</code> for space efficiency. This achieves O(log 256) = 8 parallel steps versus O(N) sequential.</p>
+            <p>We used the exact prefix sum implementation from Assignment 2, adapted to use <code>uint16_t</code> for
+                space efficiency. This achieves O(log 256) = 8 parallel steps versus O(N) sequential.</p>
 
             <h3>Optimization Journey</h3>
             <ul>
-                <li><strong>Iteration 1 - Dynamic Allocation (Failed):</strong> CUDA device-side <code>new</code> caused 10–100× slowdown. <strong>Lesson:</strong> GPU kernels require pre-allocated memory.</li>
-                <li><strong>Iteration 2 - Single Block with Fixed Buffers (Marginal):</strong> Limited capacity to ~300 words with only 1.2× speedup. GPU utilization was only 9%. <strong>Lesson:</strong> Must embrace multi-block execution.</li>
-                <li><strong>Iteration 3 - Multi-Block Coordination (Breakthrough):</strong> Only word counts need to transfer back to CPU. Achieved 15–25× initial speedup. <strong>Lesson:</strong> Minimizing data transfer > minimizing kernel launches.</li>
-                <li><strong>Iteration 4 - Memory Layout Optimization:</strong> Each block has its own non-overlapping region, eliminating atomic contention. Additional 1.3× speedup.</li>
-                <li><strong>Iteration 5 - Prefix Sum Integration:</strong> Reduced truncation overhead from 15% to 3% of total runtime.</li>
+                <li><strong>Iteration 1 - Dynamic Allocation (Failed):</strong> CUDA device-side <code>new</code> caused
+                    10–100× slowdown. <strong>Lesson:</strong> GPU kernels require pre-allocated memory.</li>
+                <li><strong>Iteration 2 - Single Block with Fixed Buffers (Marginal):</strong> Limited capacity to ~300
+                    words with only 1.2× speedup. GPU utilization was only 9%. <strong>Lesson:</strong> Must embrace
+                    multi-block execution.</li>
+                <li><strong>Iteration 3 - Multi-Block Coordination (Breakthrough):</strong> Only word counts need to
+                    transfer back to CPU. Achieved 15–25× initial speedup. <strong>Lesson:</strong> Minimizing data
+                    transfer > minimizing kernel launches.</li>
+                <li><strong>Iteration 4 - Memory Layout Optimization:</strong> Each block has its own non-overlapping
+                    region, eliminating atomic contention. Additional 1.3× speedup.</li>
+                <li><strong>Iteration 5 - Prefix Sum Integration:</strong> Reduced truncation overhead from 15% to 3% of
+                    total runtime.</li>
             </ul>
 
             <h3>Code Provenance</h3>
-            <p>This implementation was developed from scratch. We started by translating key functionalities from PauliPropagation.jl and Qiskit/pauli-prop into C++ for performance and flexibility. All parallel algorithm design and optimization is original work.</p>
+            <p>This implementation was developed from scratch. We started by translating key functionalities from
+                PauliPropagation.jl and Qiskit/pauli-prop into C++ for performance and flexibility. All parallel
+                algorithm design and optimization is original work.</p>
         </div>
 
         <div class="content-section">
@@ -332,14 +433,18 @@
 
             <h3>Performance Metrics</h3>
             <ul>
-                <li><strong>Wall-clock time:</strong> Total execution in milliseconds (initialization to final result)</li>
-                <li><strong>Speedup:</strong> Ratio T<sub>CPU</sub> / T<sub>GPU</sub> relative to single-threaded CPU baseline</li>
+                <li><strong>Wall-clock time:</strong> Total execution in milliseconds (initialization to final result)
+                </li>
+                <li><strong>Speedup:</strong> Ratio T<sub>CPU</sub> / T<sub>GPU</sub> relative to single-threaded CPU
+                    baseline</li>
                 <li><strong>Throughput:</strong> Pauli words processed per second</li>
-                <li><strong>Timing methodology:</strong> C++ chrono for CPU, CUDA events for GPU, averaged over 5 runs</li>
+                <li><strong>Timing methodology:</strong> C++ chrono for CPU, CUDA events for GPU, averaged over 5 runs
+                </li>
             </ul>
 
             <h3>Experimental Setup</h3>
-            <p><strong>Hardware:</strong> GHC machines with Intel Xeon CPUs and NVIDIA GeForce RTX 2080 GPUs (8GB VRAM)</p>
+            <p><strong>Hardware:</strong> GHC machines with Intel Xeon CPUs and NVIDIA GeForce RTX 2080 GPUs (8GB VRAM)
+            </p>
             <p><strong>Baseline:</strong> Single-threaded CPU using <code>std::map</code></p>
             <p><strong>Test Parameters:</strong></p>
             <ul>
@@ -349,13 +454,18 @@
                 <li>Gate compositions: Clifford-only, mixed (50% rotations), rotation-heavy (80% rotations)</li>
                 <li>Truncation thresholds: 4, 6, 8</li>
             </ul>
-            <p><strong>Test circuits:</strong> Synthetic benchmarks, VQE-style quantum chemistry circuits, QAOA circuits</p>
+            <p><strong>Test circuits:</strong> Synthetic benchmarks, VQE-style quantum chemistry circuits, QAOA circuits
+            </p>
 
             <h3>Speedup Results</h3>
             <ul>
-                <li><strong>Large workloads</strong> (1000+ words, 100+ gates): 50–626× speedup. Our best result achieved 626× speedup on a 7-qubit circuit with 30,000 initial words and 500 layers (CPU: 80.9s, GPU: 0.129s).</li>
-                <li><strong>Medium workloads</strong> (500-5000 words, 50+ gates): 100–260× speedup with excellent GPU utilization.</li>
-                <li><strong>Small workloads</strong> (<500 words): 26–50× speedup. Still significant advantage but approaching kernel launch overhead limits.</li>
+                <li><strong>Large workloads</strong> (1000+ words, 100+ gates): 50–626× speedup. Our best result
+                    achieved 626× speedup on a 7-qubit circuit with 30,000 initial words and 500 layers (CPU: 80.9s,
+                    GPU: 0.129s).</li>
+                <li><strong>Medium workloads</strong> (500-5000 words, 50+ gates): 100–260× speedup with excellent GPU
+                    utilization.</li>
+                <li><strong>Small workloads</strong> (<500 words): 26–50× speedup. Still significant advantage but
+                        approaching kernel launch overhead limits.</li>
             </ul>
 
             <p><strong>Gate composition impact:</strong></p>
@@ -373,81 +483,166 @@
                     <th>GPU Time</th>
                     <th>Speedup</th>
                 </tr>
-                <tr><td>30K words, 500 layers</td><td>80.89s</td><td>0.129s</td><td>626×</td></tr>
-                <tr><td>8K words, 50 layers</td><td>3.34s</td><td>0.009s</td><td>377×</td></tr>
-                <tr><td>5K words, 120 layers</td><td>5.47s</td><td>0.021s</td><td>263×</td></tr>
-                <tr><td>5K words, 150 layers</td><td>6.77s</td><td>0.026s</td><td>261×</td></tr>
-                <tr><td>4K words, 100 layers</td><td>3.55s</td><td>0.017s</td><td>204×</td></tr>
-                <tr><td>3K words, 200 layers</td><td>5.53s</td><td>0.034s</td><td>161×</td></tr>
-                <tr><td>2K words, 250 layers</td><td>4.67s</td><td>0.043s</td><td>108×</td></tr>
-                <tr><td>1K words, 300 layers</td><td>2.78s</td><td>0.052s</td><td>54×</td></tr>
-                <tr><td>1K words, 400 layers</td><td>3.66s</td><td>0.069s</td><td>53×</td></tr>
-                <tr><td>500 words, 500 layers</td><td>2.26s</td><td>0.086s</td><td>26×</td></tr>
-                <tr><th>Average</th><th></th><th></th><th>213×</th></tr>
+                <tr>
+                    <td>30K words, 500 layers</td>
+                    <td>80.89s</td>
+                    <td>0.129s</td>
+                    <td>626×</td>
+                </tr>
+                <tr>
+                    <td>8K words, 50 layers</td>
+                    <td>3.34s</td>
+                    <td>0.009s</td>
+                    <td>377×</td>
+                </tr>
+                <tr>
+                    <td>5K words, 120 layers</td>
+                    <td>5.47s</td>
+                    <td>0.021s</td>
+                    <td>263×</td>
+                </tr>
+                <tr>
+                    <td>5K words, 150 layers</td>
+                    <td>6.77s</td>
+                    <td>0.026s</td>
+                    <td>261×</td>
+                </tr>
+                <tr>
+                    <td>4K words, 100 layers</td>
+                    <td>3.55s</td>
+                    <td>0.017s</td>
+                    <td>204×</td>
+                </tr>
+                <tr>
+                    <td>3K words, 200 layers</td>
+                    <td>5.53s</td>
+                    <td>0.034s</td>
+                    <td>161×</td>
+                </tr>
+                <tr>
+                    <td>2K words, 250 layers</td>
+                    <td>4.67s</td>
+                    <td>0.043s</td>
+                    <td>108×</td>
+                </tr>
+                <tr>
+                    <td>1K words, 300 layers</td>
+                    <td>2.78s</td>
+                    <td>0.052s</td>
+                    <td>54×</td>
+                </tr>
+                <tr>
+                    <td>1K words, 400 layers</td>
+                    <td>3.66s</td>
+                    <td>0.069s</td>
+                    <td>53×</td>
+                </tr>
+                <tr>
+                    <td>500 words, 500 layers</td>
+                    <td>2.26s</td>
+                    <td>0.086s</td>
+                    <td>26×</td>
+                </tr>
+                <tr>
+                    <th>Average</th>
+                    <th></th>
+                    <th></th>
+                    <th>213×</th>
+                </tr>
             </table>
 
             <figure>
                 <img src="images/speedup_chart.png" alt="Speedup chart">
-                <figcaption>Figure 4: GPU speedup over single-threaded CPU baseline across different test configurations. Speedups range from 26× to 626× depending on workload size.</figcaption>
+                <figcaption>Figure 4: GPU speedup over single-threaded CPU baseline across different test
+                    configurations. Speedups range from 26× to 626× depending on workload size.</figcaption>
             </figure>
 
             <h3>Scaling Behavior</h3>
             <p>Three distinct regimes observed:</p>
             <ul>
-                <li><strong>Small regime</strong> (1-100 words): Poor GPU efficiency (~10-20% of peak). Kernel launch overhead dominates.</li>
-                <li><strong>Medium regime</strong> (100-500 words): Strong performance, 15-25× speedup. Multi-block execution provides good parallelism.</li>
-                <li><strong>Large regime</strong> (5000+ words): Peak efficiency, 200–626× speedup. Multiple blocks saturate SMs, approaching memory bandwidth limit (~100 GB/s). GPU throughput reaches 230+ million word-gates per second.</li>
+                <li><strong>Small regime</strong> (1-100 words): Poor GPU efficiency (~10-20% of peak). Kernel launch
+                    overhead dominates.</li>
+                <li><strong>Medium regime</strong> (100-500 words): Strong performance, 15-25× speedup. Multi-block
+                    execution provides good parallelism.</li>
+                <li><strong>Large regime</strong> (5000+ words): Peak efficiency, 200–626× speedup. Multiple blocks
+                    saturate SMs, approaching memory bandwidth limit (~100 GB/s). GPU throughput reaches 230+ million
+                    word-gates per second.</li>
             </ul>
-            <p><strong>Empirical scaling formula:</strong> Speedup S ≈ min(600, 0.02 × N × D) where N is initial word count and D is circuit depth.</p>
+            <p><strong>Empirical scaling formula:</strong> Speedup \( S \approx \min(600, 0.02 \times N \times D) \)
+                where \( N \) is initial word
+                count and \( D \) is circuit depth.</p>
 
             <figure>
                 <img src="images/performance_scaling.png" alt="Performance scaling">
-                <figcaption>Figure 5: Performance scaling with problem size. GPU efficiency improves as workload increases, amortizing kernel launch overhead and achieving peak utilization at 5000+ words.</figcaption>
+                <figcaption>Figure 5: Performance scaling with problem size. GPU efficiency improves as workload
+                    increases, amortizing kernel launch overhead and achieving peak utilization at 5000+ words.
+                </figcaption>
             </figure>
 
             <h3>Parameter Sensitivity</h3>
             <ul>
-                <li><strong>Qubit count:</strong> Modest impact—increasing 4→10 qubits reduces throughput ~15% due to larger memory transfers.</li>
-                <li><strong>Circuit depth:</strong> Linear increase in time for both CPU and GPU. GPU maintains consistent speedup across all depths.</li>
-                <li><strong>Initial word count:</strong> Strong predictor of GPU speedup. Below ~100 words CPU is competitive. Above ~500 words GPU saturates at peak efficiency.</li>
-                <li><strong>Gate composition:</strong> Clifford-only = best; 25% rotations = ~10% slower; 50% rotations = ~25% slower; 80% rotations = ~40% slower.</li>
-                <li><strong>Truncation threshold:</strong> Higher thresholds allow more words (more accurate but slower). Impact on speedup: 5-10% variation across thresholds 4-8.</li>
+                <li><strong>Qubit count:</strong> Modest impact—increasing 4→10 qubits reduces throughput ~15% due to
+                    larger memory transfers.</li>
+                <li><strong>Circuit depth:</strong> Linear increase in time for both CPU and GPU. GPU maintains
+                    consistent speedup across all depths.</li>
+                <li><strong>Initial word count:</strong> Strong predictor of GPU speedup. Below ~100 words CPU is
+                    competitive. Above ~500 words GPU saturates at peak efficiency.</li>
+                <li><strong>Gate composition:</strong> Clifford-only = best; 25% rotations = ~10% slower; 50% rotations
+                    = ~25% slower; 80% rotations = ~40% slower.</li>
+                <li><strong>Truncation threshold:</strong> Higher thresholds allow more words (more accurate but
+                    slower). Impact on speedup: 5-10% variation across thresholds 4-8.</li>
             </ul>
 
             <figure>
                 <img src="images/parameter_analysis.png" alt="Parameter analysis">
-                <figcaption>Figure 6: Parameter sensitivity analysis showing how qubit count, circuit depth, initial word count, and gate composition affect performance and speedup.</figcaption>
+                <figcaption>Figure 6: Parameter sensitivity analysis showing how qubit count, circuit depth, initial
+                    word count, and gate composition affect performance and speedup.</figcaption>
             </figure>
 
             <h3>Correctness Validation</h3>
             <p>Comprehensive test suite with 34+ test cases validates:</p>
             <ul>
-                <li><strong>Clifford circuits</strong> (10 cases): Simple circuits with known analytical results. CPU and GPU match analytical solutions within floating-point tolerance (10⁻¹²).</li>
-                <li><strong>Non-Clifford circuits</strong> (8 cases): Rotation gates with numerical solutions. CPU and GPU agree within 10⁻¹⁰ relative error across all tests.</li>
-                <li><strong>CPU-GPU consistency:</strong> GPU results match CPU baseline for all 34 test cases. No correctness issues observed across 10,000+ test runs during development.</li>
+                <li><strong>Clifford circuits</strong> (10 cases): Simple circuits with known analytical results. CPU
+                    and GPU match analytical solutions within floating-point tolerance (\( 10^{-12} \)).</li>
+                <li><strong>Non-Clifford circuits</strong> (8 cases): Rotation gates with numerical solutions. CPU and
+                    GPU agree within \( 10^{-10} \) relative error across all tests.</li>
+                <li><strong>CPU-GPU consistency:</strong> GPU results match CPU baseline for all 34 test cases. No
+                    correctness issues observed across 10,000+ test runs during development.</li>
             </ul>
 
             <h3>Memory Analysis</h3>
             <ul>
-                <li><strong>CPU memory:</strong> O(N) for map storage. For 10,000 words: ~1.5MB (word data + map overhead).</li>
-                <li><strong>GPU memory:</strong> Pre-allocated arrays. For B=400 blocks, T=256, q=10: ~5MB total, trivial fraction of 8GB VRAM.</li>
-                <li><strong>Memory bandwidth:</strong> GPU utilization ~60-70% of peak 100 GB/s on large workloads. Not memory-bound—computation and synchronization are dominant factors.</li>
+                <li><strong>CPU memory:</strong> \( O(N) \) for map storage. For 10,000 words: ~1.5MB (word data + map
+                    overhead).</li>
+                <li><strong>GPU memory:</strong> Pre-allocated arrays. For B=400 blocks, T=256, q=10: ~5MB total,
+                    trivial fraction of 8GB VRAM.</li>
+                <li><strong>Memory bandwidth:</strong> GPU utilization ~60-70% of peak 100 GB/s on large workloads. Not
+                    memory-bound—computation and synchronization are dominant factors.</li>
             </ul>
 
             <figure>
                 <img src="images/memory_analysis.png" alt="Memory analysis">
-                <figcaption>Figure 7: Memory usage patterns for CPU and GPU implementations, showing efficient utilization of GPU shared memory and global memory.</figcaption>
+                <figcaption>Figure 7: Memory usage patterns for CPU and GPU implementations, showing efficient
+                    utilization of GPU shared memory and global memory.</figcaption>
             </figure>
 
             <h3>Performance Limiting Factors</h3>
             <p>Based on profiling analysis:</p>
             <ol>
-                <li><strong>Shared Memory Capacity:</strong> GPU shared memory limits words per block to ~256 maximum (MAX_PAULI_WORDS = 512 with 2× factor for rotation splits). This was the main barrier to processing more work per block.</li>
-                <li><strong>Kernel Launch Overhead:</strong> For small workloads (<100 words), ~10μs per kernel launch dominates. Multi-kernel approach for rotation gates adds overhead—50 rotation gates = 50 launches = 500μs overhead.</li>
-                <li><strong>Branch Divergence:</strong> Non-Clifford gates cause divergent execution. Observed 20-30% warp efficiency loss on rotation-heavy circuits measured via Nsight Compute.</li>
-                <li><strong>Memory Transfer:</strong> Our optimization of only transferring counts (not words) significantly reduced this from dominant to minor factor.</li>
+                <li><strong>Shared Memory Capacity:</strong> GPU shared memory limits words per block to ~256 maximum
+                    (MAX_PAULI_WORDS = 512 with 2× factor for rotation splits). This was the main barrier to processing
+                    more work per block.</li>
+                <li><strong>Kernel Launch Overhead:</strong> For small workloads (<100 words), ~10μs per kernel launch
+                        dominates. Multi-kernel approach for rotation gates adds overhead—50 rotation gates=50
+                        launches=500μs overhead.</li>
+                <li><strong>Branch Divergence:</strong> Non-Clifford gates cause divergent execution. Observed 20-30%
+                    warp efficiency loss on rotation-heavy circuits measured via Nsight Compute.</li>
+                <li><strong>Memory Transfer:</strong> Our optimization of only transferring counts (not words)
+                    significantly reduced this from dominant to minor factor.</li>
             </ol>
-            <p><strong>Note:</strong> Dominant limiting factor varies by workload. Clifford-only circuits approach peak parallelism (~90% efficiency). Rotation-heavy circuits are bound by multi-kernel coordination overhead (~60% efficiency).</p>
+            <p><strong>Note:</strong> Dominant limiting factor varies by workload. Clifford-only circuits approach peak
+                parallelism (~90% efficiency). Rotation-heavy circuits are bound by multi-kernel coordination overhead
+                (~60% efficiency).</p>
 
             <h3>Platform Choice Analysis</h3>
             <p><strong>GPU was appropriate because:</strong></p>
@@ -463,27 +658,34 @@
                 <li>Lack of fast shared memory (cache hierarchy less flexible)</li>
                 <li>Expected speedup: 4-8× maximum on 16-core system</li>
             </ul>
-            <p><strong>However,</strong> for small circuits (<50 words), CPU overhead is lower and would be preferred due to kernel launch latency. The GPU advantage only manifests at scale.</p>
+            <p><strong>However,</strong> for small circuits (<50 words), CPU overhead is lower and would be preferred
+                    due to kernel launch latency. The GPU advantage only manifests at scale.</p>
         </div>
 
         <div class="content-section">
             <h2>References</h2>
             <ol>
-                <li>L. J. S. Ferreira, D. E. Welander, and M. P. da Silva, "Simulating quantum dynamics with pauli paths," arXiv preprint, 2020.</li>
-                <li>H. Gharibyan, S. Hariprakash, M. Z. Mullath, and V. P. Su, "A practical guide to using pauli path simulators for utility-scale quantum experiments," arXiv preprint arXiv:2507.10771, 2025.</li>
-                <li>M. S. Rudolph, "PauliPropagation.jl: Julia implementation of pauli propagation," <a href="https://github.com/MSRudolph/PauliPropagation.jl">https://github.com/MSRudolph/PauliPropagation.jl</a>, 2024.</li>
-                <li>Qiskit Development Team, "Qiskit pauli propagation library," <a href="https://github.com/Qiskit/pauli-prop">https://github.com/Qiskit/pauli-prop</a>, 2024.</li>
+                <li>L. J. S. Ferreira, D. E. Welander, and M. P. da Silva, "Simulating quantum dynamics with pauli
+                    paths," arXiv preprint, 2020.</li>
+                <li>H. Gharibyan, S. Hariprakash, M. Z. Mullath, and V. P. Su, "A practical guide to using pauli path
+                    simulators for utility-scale quantum experiments," arXiv preprint arXiv:2507.10771, 2025.</li>
+                <li>M. S. Rudolph, "PauliPropagation.jl: Julia implementation of pauli propagation," <a
+                        href="https://github.com/MSRudolph/PauliPropagation.jl">https://github.com/MSRudolph/PauliPropagation.jl</a>,
+                    2024.</li>
+                <li>Qiskit Development Team, "Qiskit pauli propagation library," <a
+                        href="https://github.com/Qiskit/pauli-prop">https://github.com/Qiskit/pauli-prop</a>, 2024.</li>
             </ol>
         </div>
 
         <div class="content-section">
             <h2>Work Distribution</h2>
-            
+
             <h3>Arul Rhik Mazumder (arulm)</h3>
             <ul>
                 <li>Implemented CPU Pauli propagation algorithm (<code>pauli.cpp</code>)</li>
                 <li>Developed performance benchmarking infrastructure (Python scripts)</li>
-                <li>Created comprehensive test suite (<code>tests.cpp</code>, 34+ test cases including stress tests)</li>
+                <li>Created comprehensive test suite (<code>tests.cpp</code>, 34+ test cases including stress tests)
+                </li>
                 <li>Performance analysis, visualization, and documentation</li>
             </ul>
 
@@ -498,7 +700,9 @@
 
             <h3>Credit Distribution</h3>
             <p><strong>50% – 50%</strong></p>
-            <p>Both partners contributed significantly to design discussions, debugging sessions, and project direction. The division of implementation work (CPU vs GPU) naturally split responsibilities while requiring close coordination on data structure compatibility and correctness validation.</p>
+            <p>Both partners contributed significantly to design discussions, debugging sessions, and project direction.
+                The division of implementation work (CPU vs GPU) naturally split responsibilities while requiring close
+                coordination on data structure compatibility and correctness validation.</p>
         </div>
     </div>
 
@@ -506,4 +710,5 @@
         <p>15-418/618 Parallel Computer Architecture and Programming – Carnegie Mellon University</p>
     </footer>
 </body>
+
 </html>
