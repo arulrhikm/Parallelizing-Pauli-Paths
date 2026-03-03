@@ -1,6 +1,9 @@
 #include "CycleTimer.h"
 #include "pauli.h"
 #include "pauli_gpu.h"
+#ifdef OMP_ENABLED
+#include "pauli_omp.h"
+#endif
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -915,7 +918,7 @@ static vector<TestCase> create_test_cases() {
     return tests;
   }
 
-double run_single_test(const TestCase &test, int i, bool use_gpu) {
+double run_single_test(const TestCase &test, int i, bool use_gpu, int num_omp_threads) {
   cout << "=== " << i + 1 << ". " << test.name << " ===\n";
 
   // Start total timing (includes setup)
@@ -923,6 +926,20 @@ double run_single_test(const TestCase &test, int i, bool use_gpu) {
 
   Complex result;
   double computeTime = 0.0;
+
+#ifdef OMP_ENABLED
+  if (!use_gpu && num_omp_threads > 0) {
+    cout << "[OMP-" << num_omp_threads << "] Starting propagation..." << endl;
+    double startComputeTime = CycleTimer::currentSeconds();
+    result = pauli_propagation_omp(test.initial_obs, test.circuit, 10, num_omp_threads);
+    double endComputeTime = CycleTimer::currentSeconds();
+    computeTime = endComputeTime - startComputeTime;
+    cout << "[OMP-" << num_omp_threads << "] Propagation completed in "
+         << computeTime << " seconds" << endl;
+    cout << "[OMP-" << num_omp_threads << "] OMP propagation finished. Exiting." << endl;
+    return computeTime;
+  }
+#endif
 
   if (use_gpu) {
 #ifndef CPU_ONLY
@@ -997,12 +1014,12 @@ double run_single_test(const TestCase &test, int i, bool use_gpu) {
   return computeTime;
 }
 
-double run_single_test(int i, bool use_gpu) {
+double run_single_test(int i, bool use_gpu, int num_omp_threads) {
   auto test_cases = create_test_cases();
-  return run_single_test(test_cases[i], i, use_gpu);
+  return run_single_test(test_cases[i], i, use_gpu, num_omp_threads);
 }
 
-void run_all_tests(bool use_gpu) {
+void run_all_tests(bool use_gpu, int num_omp_threads) {
   auto test_cases = create_test_cases();
   int total_tests = test_cases.size();
   int passed_tests = 0;
@@ -1010,15 +1027,18 @@ void run_all_tests(bool use_gpu) {
   // Vector to store computation times
   vector<double> compute_times_ms(total_tests, 0.0);
 
-  cout << "Running " << total_tests << " tests using "
-       << (use_gpu ? "GPU" : "CPU") << " simulator\n";
+  cout << "Running " << total_tests << " tests using ";
+  if (use_gpu)            cout << "GPU";
+  else if (num_omp_threads > 0) cout << "OMP (" << num_omp_threads << " threads)";
+  else                    cout << "CPU (sequential)";
+  cout << " simulator\n";
   cout << "========================================\n\n";
 
   int i = 0;
   for (const auto &test : test_cases) {
 
     // Run the test and get computation time
-    double compute_time = run_single_test(test, i, use_gpu);
+    double compute_time = run_single_test(test, i, use_gpu, num_omp_threads);
     double compute_time_ms = compute_time * 1000.0; // Convert to milliseconds
 
     compute_times_ms[i] = compute_time_ms;

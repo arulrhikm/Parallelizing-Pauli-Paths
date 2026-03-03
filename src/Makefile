@@ -22,13 +22,16 @@ NVCC = nvcc
 CXXFLAGS = -std=c++17 -Wall -O2
 NVCCFLAGS = -std=c++17 -O2 $(HOST_COMPILER)
 
-OBJ_DIR = build
+OBJ_DIR     = build
 OBJ_DIR_CPU = build_cpu
+OBJ_DIR_OMP = build_omp
 
 # Source files in current directory (since Makefile is in src/)
 SOURCES = pauli.cpp tests.cpp main.cpp
 OBJECTS_GPU = $(OBJ_DIR)/pauli.o $(OBJ_DIR)/tests.o $(OBJ_DIR)/main.o
 OBJECTS_CPU = $(OBJ_DIR_CPU)/pauli.o $(OBJ_DIR_CPU)/tests.o $(OBJ_DIR_CPU)/main.o
+OBJECTS_OMP = $(OBJ_DIR_OMP)/pauli.o $(OBJ_DIR_OMP)/pauli_omp.o \
+              $(OBJ_DIR_OMP)/tests.o $(OBJ_DIR_OMP)/main.o
 
 # GPU sources
 GPU_SOURCES = pauli_gpu.cu
@@ -37,9 +40,10 @@ GPU_OBJECTS = $(OBJ_DIR)/pauli_gpu.o
 # Output in parent directory
 TARGET_GPU = ../pauli_propagation_gpu.exe
 TARGET_CPU = ../pauli_propagation_cpu.exe
+TARGET_OMP = ../pauli_propagation_omp.exe
 
-# Build both by default
-all: gpu cpu
+# Build all three by default
+all: gpu cpu omp
 
 # GPU version
 gpu: $(OBJECTS_GPU) $(GPU_OBJECTS)
@@ -51,6 +55,11 @@ cpu: $(OBJECTS_CPU)
 	$(CXX) $(CXXFLAGS) -DCPU_ONLY -o $(TARGET_CPU) $^
 	@echo "✓ CPU version built: $(TARGET_CPU)"
 
+# OpenMP multi-threaded CPU baseline (no CUDA required)
+omp: $(OBJECTS_OMP)
+	$(CXX) $(CXXFLAGS) -DCPU_ONLY -DOMP_ENABLED -fopenmp -o $(TARGET_OMP) $^
+	@echo "✓ OMP version built: $(TARGET_OMP)"
+
 # Compile C++ files for GPU build
 $(OBJ_DIR)/%.o: %.cpp
 	mkdir -p $(OBJ_DIR)
@@ -61,12 +70,18 @@ $(OBJ_DIR_CPU)/%.o: %.cpp
 	mkdir -p $(OBJ_DIR_CPU)
 	$(CXX) $(CXXFLAGS) -DCPU_ONLY -c $< -o $@
 
+# Compile C++ files for OMP build (includes pauli_omp.cpp)
+$(OBJ_DIR_OMP)/%.o: %.cpp
+	mkdir -p $(OBJ_DIR_OMP)
+	$(CXX) $(CXXFLAGS) -DCPU_ONLY -DOMP_ENABLED -fopenmp -c $< -o $@
+
 # Compile CUDA files
 $(OBJ_DIR)/%.o: %.cu
 	mkdir -p $(OBJ_DIR)
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR) $(OBJ_DIR_CPU) $(TARGET_GPU) $(TARGET_CPU)
+	rm -rf $(OBJ_DIR) $(OBJ_DIR_CPU) $(OBJ_DIR_OMP) \
+	       $(TARGET_GPU) $(TARGET_CPU) $(TARGET_OMP)
 
-.PHONY: all clean gpu cpu
+.PHONY: all clean gpu cpu omp
