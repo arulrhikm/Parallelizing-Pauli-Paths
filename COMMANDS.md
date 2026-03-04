@@ -19,7 +19,7 @@ python3 scripts/run_benchmark.py               # CPU-seq vs OMP-1/4/8/16 vs GPU
 
 # ── External-tool comparison ─────────────────────────────────────────────
 julia  scripts/benchmark_julia.jl             # PauliPropagation.jl
-python3 scripts/benchmark_qiskit.py           # Qiskit SparsePauliOp
+python scripts/benchmark_qiskit.py           # Qiskit SparsePauliOp
 
 # ── Paper figures ────────────────────────────────────────────────────────
 python3 scripts/generate_all_figures.py

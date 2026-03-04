@@ -30,7 +30,7 @@ import csv
 from pathlib import Path
 
 try:
-    from qiskit.quantum_info import SparsePauliOp
+    from qiskit.quantum_info import SparsePauliOp, Clifford
     from qiskit import QuantumCircuit
     QISKIT_OK = True
 except ImportError:
@@ -113,10 +113,15 @@ STRESS_TESTS = [
 
 def evolve_observable(obs: SparsePauliOp, qc: QuantumCircuit) -> SparsePauliOp:
     """
-    Evolve observable backward through the circuit using Qiskit.
-    SparsePauliOp.evolve(qc) computes U† O U exactly for Clifford circuits.
+    Evolve observable backward through the circuit: computes U† O U exactly.
+
+    SparsePauliOp.evolve() was removed in Qiskit 2.x.  The replacement is to
+    convert the circuit to a Clifford and call PauliList.evolve() on the
+    underlying Paulis, then reconstruct the SparsePauliOp.
     """
-    return obs.evolve(qc)
+    clifford = Clifford(qc)
+    evolved_paulis = obs.paulis.evolve(clifford)
+    return SparsePauliOp(evolved_paulis, coeffs=obs.coeffs).simplify()
 
 
 # ---------------------------------------------------------------------------

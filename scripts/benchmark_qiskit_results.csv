@@ -1,11 +1,11 @@
 test,qiskit_evolve_s
-"STRESS 23: 7q, 2K words, 100 layers",-1.0
-"STRESS 24: 7q, 5K words, 150 layers",-1.0
-"STRESS 25: 7q, 3K words, 200 layers",-1.0
-"STRESS 26: 7q, 1K words, 300 layers",-1.0
-"STRESS 27: 7q, 4K words, 100 layers",-1.0
-"STRESS 28: 7q, 2K words, 250 layers",-1.0
-"STRESS 29: 7q, 1K words, 400 layers",-1.0
-"STRESS 30: 7q, 8K words,  50 layers",-1.0
-"STRESS 31: 7q, 500 words, 500 layers",-1.0
-"STRESS 32: 7q, 5K words, 120 layers",-1.0
+"STRESS 23: 7q, 2K words, 100 layers",0.02608670000336133
+"STRESS 24: 7q, 5K words, 150 layers",0.021033999990322627
+"STRESS 25: 7q, 3K words, 200 layers",0.024840199999744073
+"STRESS 26: 7q, 1K words, 300 layers",0.030287299989140593
+"STRESS 27: 7q, 4K words, 100 layers",0.014615100008086301
+"STRESS 28: 7q, 2K words, 250 layers",0.0289247000036994
+"STRESS 29: 7q, 1K words, 400 layers",0.04357889998937026
+"STRESS 30: 7q, 8K words,  50 layers",0.012731100010569207
+"STRESS 31: 7q, 500 words, 500 layers",0.04930179999792017
+"STRESS 32: 7q, 5K words, 120 layers",0.01754050000454299
