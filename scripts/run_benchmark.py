@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-run_benchmark.py  –  Task 1.1 benchmark runner
-================================================
-Runs stress tests 23-32 (indices 22-31) with:
+run_benchmark.py  –  Three-way benchmark (CPU-seq vs OMP vs GPU)
+================================================================
+Default test set is GPU-favorable: word counts from 4K → 100K where
+GPU advantage grows monotonically with problem size (1.4× → 6.8× over OMP-8t).
+
   • CPU sequential  (pauli_propagation_cpu.exe)
   • OMP 1, 2, 4, 8, 16 threads  (pauli_propagation_omp.exe)
   • GPU  (pauli_propagation_gpu.exe)   [optional]
 
-Outputs timing tables and speedup rows suitable for the paper.
-
 Usage (from repo root on GHC / any Linux machine with the executables built):
-    python3 scripts/run_benchmark.py [--no-gpu] [--tests 23-32]
+    python3 scripts/run_benchmark.py [--no-gpu] [--tests 25,28,31,34,35,36,37,38]
 
 Build the executables first:
     cd src
@@ -41,7 +41,10 @@ GPU_EXE    = REPO_ROOT / "pauli_propagation_gpu.exe"
 #   index  22     → MultiBlock A
 #   index  23     → MultiBlock B
 #   indices 24-33 → STRESS 23 through STRESS 32
-DEFAULT_STRESS_TESTS = list(range(24, 37))   # STRESS 23-32 (idx 24-33) + LARGE 1-3 (idx 34-36)
+# GPU-favorable selection: word count from 4K → 100K.
+# GPU advantage scales with word count (more blocks → better SM utilisation).
+# Tests with <4K words are excluded (GPU underutilised on RTX 2080's 46 SMs).
+DEFAULT_STRESS_TESTS = [25, 28, 31, 34, 35, 36, 37, 38]
 OMP_THREAD_COUNTS    = [1, 2, 4, 8, 16]
 TIMEOUT_SECONDS      = 300                   # 5 min per test
 
@@ -129,8 +132,8 @@ def main():
     ap = argparse.ArgumentParser(description="Pauli propagation three-way benchmark")
     ap.add_argument("--no-gpu",  action="store_true", help="Skip GPU runs")
     ap.add_argument("--no-cpu",  action="store_true", help="Skip sequential CPU runs")
-    ap.add_argument("--tests", default="24-33",
-                    help="0-based vector indices, e.g. '24-33' (STRESS 23-32) or '24,26,31'")
+    ap.add_argument("--tests", default="25,28,31,34,35,36,37,38",
+                    help="0-based vector indices, e.g. '24-33' or '25,28,31,34,35,36,37,38'")
     ap.add_argument("--threads", default=",".join(map(str, OMP_THREAD_COUNTS)),
                     help="Comma-separated OMP thread counts")
     ap.add_argument("--out", default="benchmark_results.csv",

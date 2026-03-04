@@ -339,3 +339,30 @@ scripts/
 | Qiskit `evolve` very slow | Expected — it's exact (no truncation). Use small test. |
 | Plots not showing on GHC | Expected — use `scp` to copy `.png` files locally. |
 | Matplotlib not installed | `pip install --user matplotlib` |
+| **`Disk quota exceeded` on git pull (GHC)** | See **§10.1** below. |
+
+### 10.1 GHC: Fix "Disk quota exceeded" on git pull
+
+AFS home is over quota, so `git pull` cannot write temp files. **Pull in `/tmp` (no quota), then copy files into your project dir.** Run these commands **on the GHC machine** (e.g. in your SSH session). Replace `YOUR_AFS_PROJECT_DIR` with your actual path (e.g. `$HOME/private/15418/Parallelizing-Pauli-Paths`).
+
+```bash
+# 1) Clone repo into /tmp (no AFS quota)
+rm -rf /tmp/ppp-pull
+git clone --depth 1 https://github.com/arulrhikm/Parallelizing-Pauli-Paths.git /tmp/ppp-pull
+
+# 2) Copy updated files into your AFS project (do NOT copy .git — avoids writing to AFS)
+rsync -av --exclude='.git' /tmp/ppp-pull/ YOUR_AFS_PROJECT_DIR/
+
+# 3) Optional: free more space so future git pull works in AFS
+cd YOUR_AFS_PROJECT_DIR
+rm -rf build build_cpu build_omp src/build src/build_cpu src/build_omp
+rm -f *.exe src/*.exe pauli_propagation_*.exe
+```
+
+One-liner (paste and replace the path once):
+
+```bash
+git clone --depth 1 https://github.com/arulrhikm/Parallelizing-Pauli-Paths.git /tmp/ppp-pull && rsync -av --exclude='.git' /tmp/ppp-pull/ ~/private/15418/Parallelizing-Pauli-Paths/
+```
+
+After this, your **source tree** is up to date. To fix `git status` later (after freeing quota): `cd YOUR_AFS_PROJECT_DIR && git fetch origin && git reset --hard origin/main`.
