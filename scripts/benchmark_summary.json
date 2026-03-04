@@ -2,218 +2,218 @@
   "benchmark_qiskit::STRESS 23: 7q, 2K words, 100 layers::qiskit::1": {
     "test_name": "STRESS 23: 7q, 2K words, 100 layers",
     "backend": "qiskit",
-    "time_s": 0.018460999999661,
+    "time_s": 0.011919399999896996,
     "source": "benchmark_qiskit",
     "test_index": 24,
     "threads": 1,
     "nterms": 1878,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 24: 7q, 5K words, 150 layers::qiskit::1": {
     "test_name": "STRESS 24: 7q, 5K words, 150 layers",
     "backend": "qiskit",
-    "time_s": 0.023858900007326156,
+    "time_s": 0.017165299999760464,
     "source": "benchmark_qiskit",
     "test_index": 25,
     "threads": 1,
     "nterms": 4307,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 25: 7q, 3K words, 200 layers::qiskit::1": {
     "test_name": "STRESS 25: 7q, 3K words, 200 layers",
     "backend": "qiskit",
-    "time_s": 0.029222700002719648,
+    "time_s": 0.01954989999649115,
     "source": "benchmark_qiskit",
     "test_index": 26,
     "threads": 1,
     "nterms": 2742,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 26: 7q, 1K words, 300 layers::qiskit::1": {
     "test_name": "STRESS 26: 7q, 1K words, 300 layers",
     "backend": "qiskit",
-    "time_s": 0.037575900001684204,
+    "time_s": 0.026853800009121187,
     "source": "benchmark_qiskit",
     "test_index": 27,
     "threads": 1,
     "nterms": 972,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 27: 7q, 4K words, 100 layers::qiskit::1": {
     "test_name": "STRESS 27: 7q, 4K words, 100 layers",
     "backend": "qiskit",
-    "time_s": 0.016516500007128343,
+    "time_s": 0.012545999998110346,
     "source": "benchmark_qiskit",
     "test_index": 28,
     "threads": 1,
     "nterms": 3511,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 28: 7q, 2K words, 250 layers::qiskit::1": {
     "test_name": "STRESS 28: 7q, 2K words, 250 layers",
     "backend": "qiskit",
-    "time_s": 0.030835099998512305,
+    "time_s": 0.02430129999993369,
     "source": "benchmark_qiskit",
     "test_index": 29,
     "threads": 1,
     "nterms": 1896,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 29: 7q, 1K words, 400 layers::qiskit::1": {
     "test_name": "STRESS 29: 7q, 1K words, 400 layers",
     "backend": "qiskit",
-    "time_s": 0.05001560000528116,
+    "time_s": 0.03887699999904726,
     "source": "benchmark_qiskit",
     "test_index": 30,
     "threads": 1,
     "nterms": 970,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 30: 7q, 8K words,  50 layers::qiskit::1": {
     "test_name": "STRESS 30: 7q, 8K words,  50 layers",
     "backend": "qiskit",
-    "time_s": 0.014317200009827502,
+    "time_s": 0.011849499991512857,
     "source": "benchmark_qiskit",
     "test_index": 31,
     "threads": 1,
     "nterms": 6307,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 31: 7q, 500 words, 500 layers::qiskit::1": {
     "test_name": "STRESS 31: 7q, 500 words, 500 layers",
     "backend": "qiskit",
-    "time_s": 0.056171400006860495,
+    "time_s": 0.045912800007499754,
     "source": "benchmark_qiskit",
     "test_index": 32,
     "threads": 1,
     "nterms": 497,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::STRESS 32: 7q, 5K words, 120 layers::qiskit::1": {
     "test_name": "STRESS 32: 7q, 5K words, 120 layers",
     "backend": "qiskit",
-    "time_s": 0.019097900003544055,
+    "time_s": 0.014839700001175515,
     "source": "benchmark_qiskit",
     "test_index": 33,
     "threads": 1,
     "nterms": 4308,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::SCALE-1: 9q, 10K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-1: 9q, 10K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.02421070000855252,
+    "time_s": 0.01652710000053048,
     "source": "benchmark_qiskit",
     "test_index": 34,
     "threads": 1,
     "nterms": 9826,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::SCALE-2: 9q, 15K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-2: 9q, 15K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.03006229999300558,
+    "time_s": 0.02240610000444576,
     "source": "benchmark_qiskit",
     "test_index": 35,
     "threads": 1,
     "nterms": 14555,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::SCALE-3: 9q, 20K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-3: 9q, 20K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.03366159999859519,
+    "time_s": 0.028093000000808388,
     "source": "benchmark_qiskit",
     "test_index": 36,
     "threads": 1,
     "nterms": 19268,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::SCALE-4: 9q, 50K words, 20 layers::qiskit::1": {
     "test_name": "SCALE-4: 9q, 50K words, 20 layers",
     "backend": "qiskit",
-    "time_s": 0.14500750000297558,
+    "time_s": 0.05924360000062734,
     "source": "benchmark_qiskit",
     "test_index": 37,
     "threads": 1,
     "nterms": 45563,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::SCALE-5: 9q, 100K words, 10 layers::qiskit::1": {
     "test_name": "SCALE-5: 9q, 100K words, 10 layers",
     "backend": "qiskit",
-    "time_s": 0.29250570001022425,
+    "time_s": 0.1166743000067072,
     "source": "benchmark_qiskit",
     "test_index": 38,
     "threads": 1,
     "nterms": 83099,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::DIVERSE-1: 10q, 30K H+CNOT, 20L::qiskit::1": {
     "test_name": "DIVERSE-1: 10q, 30K H+CNOT, 20L",
     "backend": "qiskit",
-    "time_s": 0.10158190000220202,
+    "time_s": 0.043909600004553795,
     "source": "benchmark_qiskit",
     "test_index": 39,
     "threads": 1,
     "nterms": 29616,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::DIVERSE-2: 10q, 60K H+CNOT, 10L::qiskit::1": {
     "test_name": "DIVERSE-2: 10q, 60K H+CNOT, 10L",
     "backend": "qiskit",
-    "time_s": 0.2061295000021346,
+    "time_s": 0.0836453999945661,
     "source": "benchmark_qiskit",
     "test_index": 40,
     "threads": 1,
     "nterms": 58371,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "benchmark_qiskit::DIVERSE-4: 9q, 35K S+H+CNOT, 20L::qiskit::1": {
     "test_name": "DIVERSE-4: 9q, 35K S+H+CNOT, 20L",
     "backend": "qiskit",
-    "time_s": 0.09688029999961145,
+    "time_s": 0.04391120000218507,
     "source": "benchmark_qiskit",
     "test_index": 42,
     "threads": 1,
     "nterms": 32764,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:49:55Z"
+    "timestamp": "2026-03-04T06:52:53Z"
   },
   "verify_correctness::H|ZâŸ©::omp::1": {
     "test_name": "H|ZâŸ©",

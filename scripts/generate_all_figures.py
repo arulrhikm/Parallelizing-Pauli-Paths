@@ -3,15 +3,27 @@
 generate_all_figures.py  –  publication-quality plots from benchmark_summary.json
 ==================================================================================
 Reads scripts/benchmark_summary.json (written by run_benchmark.py,
-benchmark_qiskit.py, and verify_correctness.py) and produces four figures:
+benchmark_qiskit.py, and verify_correctness.py) and produces five figures:
 
   images/fig1_time_comparison.png    – wall-clock time across all 23 tests
   images/fig2_speedup_scaling.png    – GPU & OMP speedup vs initial word count
   images/fig3_thread_scaling.png     – OMP strong-scaling (speedup vs threads)
   images/fig4_qiskit_vs_gpu.png      – our GPU/CPU vs Qiskit on Clifford tests
+  images/fig5_time_vs_nterms.png     – time vs output Pauli-word count
 
-Run (from repo root):
-    python3 scripts/generate_all_figures.py
+Typical workflow
+----------------
+1. Run benchmarks on GHC:
+       python3 scripts/run_benchmark.py
+
+2. Copy the results JSON back to your local machine:
+       scp <user>@<ghc-host>:<ghc-project-path>/scripts/benchmark_summary.json scripts/
+
+   Or point directly at the downloaded file:
+       python3 scripts/generate_all_figures.py --json /path/to/benchmark_summary.json
+
+3. Generate figures (runs locally, needs only matplotlib):
+       python3 scripts/generate_all_figures.py
 
 The script silently skips any figure for which the required data is absent
 (e.g. GPU rows are only present after running on a GHC node).
@@ -20,13 +32,14 @@ The script silently skips any figure for which the required data is absent
 from __future__ import annotations
 import sys
 import json
+import argparse
 from pathlib import Path
 from collections import defaultdict
 
-SCRIPTS_DIR  = Path(__file__).resolve().parent
-REPO_ROOT    = SCRIPTS_DIR.parent
-SUMMARY_JSON = SCRIPTS_DIR / "benchmark_summary.json"
-IMAGES_DIR   = REPO_ROOT / "images"
+SCRIPTS_DIR       = Path(__file__).resolve().parent
+REPO_ROOT         = SCRIPTS_DIR.parent
+DEFAULT_JSON      = SCRIPTS_DIR / "benchmark_summary.json"
+IMAGES_DIR        = REPO_ROOT / "images"
 
 # ── palette (colorblind-friendly) ───────────────────────────────────────────
 COLORS = {
@@ -136,17 +149,21 @@ INIT_WORDS = {
 
 # ── Data loading ─────────────────────────────────────────────────────────────
 
-def load_data() -> dict:
+def load_data(json_path: Path) -> dict:
     """
     Returns data[test_name][backend_key] = {"time_s": float, "nterms": int}
     backend_key: "cpu_seq" | "omp_1" | "omp_4" | "omp_8" | "omp_16" |
                  "gpu" | "qiskit" | "julia"
     """
-    if not SUMMARY_JSON.exists():
-        print(f"  [WARN] {SUMMARY_JSON} not found — run benchmark scripts first.")
+    if not json_path.exists():
+        print(f"  [WARN] {json_path} not found.")
+        print("  Run one of:")
+        print("    python3 scripts/benchmark_qiskit.py")
+        print("    python3 scripts/run_benchmark.py      (on GHC)")
+        print("  Then re-run this script.")
         return {}
 
-    raw = json.loads(SUMMARY_JSON.read_text(encoding="utf-8"))
+    raw = json.loads(json_path.read_text(encoding="utf-8"))
     data: dict = defaultdict(dict)
 
     for entry in raw.values():
@@ -490,9 +507,21 @@ def fig_time_vs_nterms(data: dict, mpl):
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    ap = argparse.ArgumentParser(description="Generate benchmark figures from benchmark_summary.json")
+    ap.add_argument("--json", default=str(DEFAULT_JSON),
+                    help="Path to benchmark_summary.json (default: scripts/benchmark_summary.json)")
+    ap.add_argument("--out", default=str(IMAGES_DIR),
+                    help="Output directory for figures (default: images/)")
+    args = ap.parse_args()
+
+    global IMAGES_DIR
+    json_path  = Path(args.json)
+    IMAGES_DIR = Path(args.out)
+
     print("=" * 64)
     print("  PAULI PROPAGATION — FIGURE GENERATOR")
-    print(f"  Source: {SUMMARY_JSON}")
+    print(f"  Source : {json_path}")
+    print(f"  Output : {out_dir}")
     print("=" * 64)
 
     # Check matplotlib
@@ -508,12 +537,8 @@ def main():
         print("  [FAIL] matplotlib not installed.  pip install matplotlib")
         sys.exit(1)
 
-    data = load_data()
+    data = load_data(json_path)
     if not data:
-        print("  No data loaded — run benchmark scripts first:\n"
-              "    python3 scripts/run_benchmark.py --no-gpu   (on any machine)\n"
-              "    python3 scripts/benchmark_qiskit.py\n"
-              "    (GPU rows only available after running on a GHC GPU node)\n")
         sys.exit(0)
 
     # Count available data
@@ -532,11 +557,22 @@ def main():
 
     print()
     print("=" * 64)
-    print("  DONE — figures written to images/")
+    print("  DONE — figures written to", out_dir)
     print("=" * 64)
     print()
-    print("  To copy to local machine from GHC:")
-    print("    scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/images/*.png ./images/")
+    print("  Recommended workflow to get GHC benchmark data locally:")
+    print()
+    print("  1. On GHC — run benchmarks:")
+    print("       python3 scripts/run_benchmark.py")
+    print()
+    print("  2. On local — copy the JSON (adjust GHC path as needed):")
+    print("       scp <user>@<ghc-host>:<ghc-project>/scripts/benchmark_summary.json scripts/")
+    print()
+    print("  3. On local — regenerate figures:")
+    print("       python3 scripts/generate_all_figures.py")
+    print()
+    print("     Or point directly at the downloaded file:")
+    print("       python3 scripts/generate_all_figures.py --json /tmp/benchmark_summary.json")
 
 
 if __name__ == "__main__":

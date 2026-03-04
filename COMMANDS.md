@@ -8,22 +8,34 @@
 ## 0. TL;DR Cheat-Sheet
 
 ```bash
-# ── Build (GHC) ──────────────────────────────────────────────────────────
+# ── On GHC: build ─────────────────────────────────────────────────────────
 cd src && make clean && make all && cd ..       # CPU + OMP + GPU
 
-# ── Correctness (run first, always) ─────────────────────────────────────
-python3 scripts/verify_correctness.py          # OMP on any machine; GPU on GHC
+# ── On GHC: correctness (run first, always) ───────────────────────────────
+python3 scripts/verify_correctness.py          # OMP + GPU correctness
 
-# ── Paper benchmark table ────────────────────────────────────────────────
+# ── On GHC: benchmark (writes scripts/benchmark_summary.json) ────────────
 python3 scripts/run_benchmark.py               # CPU-seq vs OMP-1/4/8/16 vs GPU
 
-# ── External-tool comparison ─────────────────────────────────────────────
+# ── On local: external-tool comparison (also writes benchmark_summary.json)
+python scripts/benchmark_qiskit.py            # Qiskit SparsePauliOp
 julia  scripts/benchmark_julia.jl             # PauliPropagation.jl
-python scripts/benchmark_qiskit.py           # Qiskit SparsePauliOp
 
-# ── Paper figures ────────────────────────────────────────────────────────
+# ── Copy GHC results to local (run from local terminal) ───────────────────
+# First find the project path on GHC:
+#   ssh <user>@<ghc-host> "find ~ -name benchmark_summary.json 2>/dev/null"
+# Then copy (substitute the path found above):
+scp <user>@<ghc-host>:<ghc-project-path>/scripts/benchmark_summary.json scripts/
+
+# ── On local: generate all figures ────────────────────────────────────────
 python3 scripts/generate_all_figures.py
+# figures appear in  images/fig1_*.png … images/fig5_*.png
 ```
+
+> **Key principle**: all benchmark scripts write to `scripts/benchmark_summary.json`
+> (one entry per algorithm×experiment, deduplicated on re-run).  
+> Copy that single JSON file to your local machine, then run
+> `generate_all_figures.py` locally — matplotlib is NOT required on GHC.
 
 ---
 
@@ -271,24 +283,34 @@ python3 scripts/benchmark_qiskit.py
 
 ## 7. Figure Generation
 
-```bash
-# All figures at once (recommended):
-python3 scripts/generate_all_figures.py
+Five figures are generated from `scripts/benchmark_summary.json`:
 
-# Individual panels:
-python3 scripts/performance_analysis.py       # speedup_analysis.png, parameter_analysis.png
-python3 scripts/generate_report_figures.py    # timing_comparison.png, speedup_chart.png
-python3 scripts/algorithmic_visualization.py  # clifford_analysis.png, pauli_evolution.png
-python3 scripts/correctness_validation.py     # correctness_validation.png
+```
+images/fig1_time_comparison.png    – wall-clock time per backend × test (log scale)
+images/fig2_speedup_scaling.png    – GPU / OMP speedup vs initial word count
+images/fig3_thread_scaling.png     – OMP strong-scaling (speedup vs thread count)
+images/fig4_qiskit_vs_gpu.png      – our GPU vs Qiskit on Clifford tests
+images/fig5_time_vs_nterms.png     – time vs output Pauli-word count
 ```
 
-Figures are saved to the repo root as `.png` files.
-
-### Copy figures to local machine (from GHC)
+**Run figures locally** (matplotlib not required on GHC):
 
 ```bash
-# Run this on YOUR LOCAL machine:
-scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/*.png ./images/
+# On GHC — run benchmarks first:
+python3 scripts/run_benchmark.py        # writes scripts/benchmark_summary.json
+
+# On LOCAL machine — find GHC project path:
+ssh arulm@ghc43.ghc.andrew.cmu.edu "find ~ -name benchmark_summary.json 2>/dev/null"
+# e.g. /path/to/project/scripts/benchmark_summary.json
+
+# On LOCAL machine — copy just the JSON:
+scp arulm@ghc43.ghc.andrew.cmu.edu:/path/to/project/scripts/benchmark_summary.json scripts/
+
+# On LOCAL machine — generate all figures:
+python3 scripts/generate_all_figures.py
+
+# Or point at a specific JSON file:
+python3 scripts/generate_all_figures.py --json /tmp/benchmark_summary.json
 ```
 
 ---
@@ -296,30 +318,37 @@ scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/*.png ./images/
 ## 8. GHC Workflow (End-to-End)
 
 ```bash
-# 1. SSH to GHC
+# ── On GHC ────────────────────────────────────────────────────────────────
 ssh arulm@ghc43.ghc.andrew.cmu.edu
-cd ~/Parallelizing-Pauli-Paths
+cd <project-dir>               # wherever the repo lives on GHC
 
-# 2. Build everything
+# Build
 cd src && make clean && make all && cd ..
 
-# 3. Verify correctness first
+# Verify correctness (OMP + GPU)
 python3 scripts/verify_correctness.py
 
-# 4. Run benchmark (saves CSV)
+# Full benchmark — all 23 tests, writes scripts/benchmark_summary.json
 python3 scripts/run_benchmark.py
 
-# 5. External comparison
-julia  scripts/benchmark_julia.jl   2>&1 | tee results_julia.txt
-python3 scripts/benchmark_qiskit.py 2>&1 | tee results_qiskit.txt
+# External comparison (optional)
+julia  scripts/benchmark_julia.jl
+python3 scripts/benchmark_qiskit.py
 
-# 6. Generate figures
+# ── On LOCAL machine ──────────────────────────────────────────────────────
+# Find the project path on GHC (one-time lookup):
+ssh arulm@ghc43.ghc.andrew.cmu.edu "find ~ -name benchmark_summary.json 2>/dev/null"
+
+# Copy the JSON (substitute <ghc-project-path> with path found above):
+scp arulm@ghc43.ghc.andrew.cmu.edu:<ghc-project-path>/scripts/benchmark_summary.json scripts/
+
+# Copy the per-script CSVs (optional):
+scp arulm@ghc43.ghc.andrew.cmu.edu:<ghc-project-path>/scripts/benchmark_results.csv scripts/
+scp arulm@ghc43.ghc.andrew.cmu.edu:<ghc-project-path>/scripts/benchmark_qiskit_results.csv scripts/
+
+# Generate all five figures locally:
 python3 scripts/generate_all_figures.py
-
-# 7. From LOCAL machine — pull everything
-scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/*.png ./images/
-scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/scripts/benchmark_results.csv ./
-scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/results_*.txt ./
+# → images/fig1_time_comparison.png … images/fig5_time_vs_nterms.png
 ```
 
 ---
