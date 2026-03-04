@@ -221,18 +221,19 @@ done
 
 ### 5d. Shared results file
 
-All three benchmark scripts append rows to a single CSV:
+All three benchmark scripts upsert rows into a single JSON store:
 
 ```
-scripts/benchmark_summary.csv
+scripts/benchmark_summary.json
 ```
 
-Schema: `timestamp, source, test_index, test_name, backend, threads, time_s, correct, notes`
+Each entry is keyed by `source::test_name::backend::threads`.  
+Re-running a script **overwrites** the existing entry — no duplicates.
 
 Read it in Python:
 ```python
-import csv
-rows = list(csv.DictReader(open("scripts/benchmark_summary.csv", encoding="utf-8")))
+from scripts.shared_results import load_all
+rows = load_all()          # list of dicts, one per (algorithm, experiment)
 ```
 
 ---
