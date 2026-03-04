@@ -78,7 +78,8 @@ struct Case {
     std::map<PauliWord, Complex> obs;
     std::vector<Gate>            circuit;
     double                       tol;        // tolerance for OMP
-    double                       gpu_tol;    // tolerance for GPU (fp64 but different rounding)
+    double                       gpu_tol;    // tolerance for GPU
+    int                          max_weight = 10; // truncation weight (default 10)
 };
 
 // =============================================================================
@@ -176,7 +177,9 @@ static std::vector<Case> build_cases()
         }
         v.push_back({"7q 300w 50L Clifford", nq, obs, circ, 1e-8, 1e-6}); }
 
-    // ---- 7-qubit: deep rotation circuit (100 words, 20 layers RZ+CNOT) ----
+    // ---- 7-qubit: rotation circuit with weight-4 truncation ----
+    // max_weight=4 caps the live word count to ≤ C(7,4)+…+C(7,0) ≈ 99,
+    // keeping intermediate GPU buffer usage well within MAX_BLOCKS=400 limit.
     {   int nq = 7;
         std::map<PauliWord,Complex> obs;
         std::mt19937_64 rng(1234);
@@ -196,7 +199,7 @@ static std::vector<Case> build_cases()
             for (int q=0;q<nq;++q) circ.push_back(Gate(RZ,{q}, 0.05*(l+1)));
             for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
         }
-        v.push_back({"7q 100w 20L RZ+CNOT", nq, obs, circ, 1e-8, 1e-6}); }
+        v.push_back({"7q 100w 20L RZ+CNOT (w≤4)", nq, obs, circ, 1e-8, 1e-6, 4}); }
 
     return v;
 }
@@ -248,7 +251,7 @@ int main()
 
     for (auto &tc : cases) {
         // ---- Reference ----
-        Complex truth = pauli_propagation(tc.obs, tc.circuit, 10);
+        Complex truth = pauli_propagation(tc.obs, tc.circuit, tc.max_weight);
 
         bool case_ok = true;
 
@@ -259,7 +262,7 @@ int main()
         // ---- OMP ----
 #ifdef OMP_ENABLED
         for (int j : {1, 4, 16}) {
-            Complex got = pauli_propagation_omp(tc.obs, tc.circuit, 10, j);
+            Complex got = pauli_propagation_omp(tc.obs, tc.circuit, tc.max_weight, j);
             std::string lbl = "OMP-" + std::to_string(j) + "t";
             print_row(lbl, truth, got, tc.tol, case_ok);
             ++omp_total;
@@ -273,7 +276,7 @@ int main()
             // Silence GPU's verbose cout
             std::streambuf *saved = std::cout.rdbuf(dev_null.rdbuf());
             PauliSimulatorGPU sim(tc.nq, tc.obs, tc.circuit);
-            Complex got = sim.runPropagation(10);
+            Complex got = sim.runPropagation(tc.max_weight);
             std::cout.rdbuf(saved);
 
             bool err_result = (got.real() == -1.0 && got.imag() == -1.0);
