@@ -78,10 +78,20 @@ def run_test(exe: Path, test_idx: int, mode: str, threads: int = 0,
         print(f"  [ERROR] {e}")
         return -1.0
 
+    # For GPU mode: detect "no CUDA device" → not a valid run
+    if mode == "gpu" and "no CUDA-capable device" in output:
+        print("  [NO GPU] CUDA device not detected — run on a GPU node")
+        return -2.0   # special sentinel for "no device"
+
     # Parse "Propagation completed in X.XXXXXX seconds"
     match = re.search(r"Propagation completed in\s+([\d.eE+\-]+)\s+seconds", output)
     if match:
-        return float(match.group(1))
+        t = float(match.group(1))
+        # Guard: if GPU completed in <0.1 ms, likely a silent error (returned -1,-1)
+        if mode == "gpu" and t < 1e-4:
+            print("  [NO GPU?] GPU time suspiciously near zero — check CUDA device")
+            return -2.0
+        return t
 
     # Fallback: parse "Time (ms)" table row for this test
     match2 = re.search(r"[\d.]+\s*$", output, re.MULTILINE)
@@ -96,8 +106,12 @@ def run_test(exe: Path, test_idx: int, mode: str, threads: int = 0,
 
 
 def fmt(t: float, width: int = 9) -> str:
+    if t == -2.0:
+        return f"{'NO-DEV':>{width}}"
     if t < 0:
         return f"{'N/A':>{width}}"
+    if t < 0.001:
+        return f"{t:>{width}.6f}"   # microsecond precision for very fast runs
     return f"{t:>{width}.3f}"
 
 
@@ -170,7 +184,13 @@ def main():
         if not args.no_gpu:
             print(f"[Test {t}] GPU ...")
             results[t]["gpu"] = run_test(GPU_EXE, t, "gpu")
-            print(f"         {results[t]['gpu']:.4f} s")
+            g = results[t]["gpu"]
+            if g == -2.0:
+                print("         NO-DEV (no CUDA-capable device on this node)")
+            elif g < 0:
+                print("         N/A")
+            else:
+                print(f"         {g:.6f} s")
 
         print()
 
@@ -276,6 +296,14 @@ def main():
                        for t in valid if results[t].get("gpu", -1) > 0]
             if cpu_gpu:
                 print(f"  GPU vs CPU-seq:             {sum(cpu_gpu)/len(cpu_gpu):.1f}x avg speedup")
+
+            no_dev = [t for t in valid if results[t].get("gpu") == -2.0]
+            if no_dev:
+                print()
+                print("  *** WARNING: GPU returned 'NO-DEV' for all tests.         ***")
+                print("  *** This machine has no CUDA-capable device.               ***")
+                print("  *** Re-run on a GPU node: ghc38, ghc40, etc.               ***")
+                print("  *** Example:  ssh arulm.ghc38.ghc@andrew.cmu.edu           ***")
 
 
 if __name__ == "__main__":

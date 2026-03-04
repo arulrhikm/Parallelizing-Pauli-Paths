@@ -370,7 +370,7 @@ int main()
 {
     auto cases = build_cases();
     int omp_passed=0, omp_total=0;
-    int gpu_passed=0, gpu_total=0;
+    int gpu_passed=0, gpu_total=0, gpu_errors=0;
 
     std::cout << std::fixed;
     std::cout
@@ -419,6 +419,7 @@ int main()
             if (err_result) {
                 std::cout << "    GPU            ERROR (simulator returned (-1,-1))\n";
                 case_ok = false;
+                ++gpu_errors;   // count errors so summary is not vacuously true
             } else {
                 print_row("GPU", truth, got, tc.gpu_tol, case_ok);
                 ++gpu_total;
@@ -443,17 +444,24 @@ int main()
               << (100.0*omp_passed/omp_total) << "%)\n";
 #endif
 #ifndef CPU_ONLY
-    if (gpu_total > 0)
+    if (gpu_total > 0) {
         std::cout << "  GPU checks : " << gpu_passed << "/" << gpu_total
                   << "  (" << std::fixed << std::setprecision(1)
                   << (100.0*gpu_passed/gpu_total) << "%)\n";
+    } else if (gpu_errors > 0) {
+        std::cout << "  GPU checks : 0/" << gpu_errors
+                  << " ERRORS  (no CUDA device, or GPU returned (-1,-1) for all cases)\n";
+    } else {
+        std::cout << "  GPU checks : skipped\n";
+    }
 #endif
 
     std::cout << "============================================================\n";
 
     bool all_pass = (omp_passed == omp_total);
 #ifndef CPU_ONLY
-    all_pass &= (gpu_passed == gpu_total);
+    // Fail if there were any GPU errors OR any GPU results were wrong
+    all_pass &= (gpu_errors == 0) && (gpu_passed == gpu_total);
 #endif
     return all_pass ? 0 : 1;
 }
