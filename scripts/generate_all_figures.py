@@ -5,39 +5,47 @@ Generate All Report Figures - Master script to create all plots for final report
 
 import subprocess
 import sys
+import os
 from pathlib import Path
 
-def run_script(script_name, description):
-    """Run a Python script"""
+# Always resolve paths relative to this script's directory so the script
+# works correctly regardless of where it is invoked from.
+SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT   = SCRIPTS_DIR.parent
+
+def run_script(script_path: Path, description: str) -> bool:
+    """Run a sibling script, working directory set to repo root."""
     print(f"\n{'='*60}")
     print(f"{description}")
-    print(f"Running: {script_name}")
+    print(f"Running: {script_path.name}")
     print('='*60)
-    
+
     try:
-        result = subprocess.run([sys.executable, script_name], 
-                               capture_output=True, text=True, timeout=600)
-        
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True, text=True, timeout=600,
+            cwd=str(REPO_ROOT),
+        )
+
         if result.returncode == 0:
-            print("✓ Completed successfully")
-            if result.stdout:
-                # Show last few lines
-                lines = result.stdout.strip().split('\n')
-                for line in lines[-3:]:
-                    if line.strip():
-                        print(f"  {line}")
+            print("  [OK] Completed successfully")
+            lines = result.stdout.strip().split('\n')
+            for line in lines[-3:]:
+                if line.strip():
+                    print(f"  {line}")
         else:
-            print("✗ Failed")
+            print("  [FAIL]")
             if result.stderr:
-                print(f"Error: {result.stderr[:200]}")
-        
+                print(f"  Error: {result.stderr[:300]}")
+
         return result.returncode == 0
     except subprocess.TimeoutExpired:
-        print("✗ Timeout (10 minutes)")
+        print("  [FAIL] Timeout (10 minutes)")
         return False
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"  [FAIL] Error: {e}")
         return False
+
 
 def main():
     print("="*70)
@@ -48,50 +56,53 @@ def main():
     print("  2. Algorithmic Visualization")
     print("  3. Correctness Validation")
     print("  4. Summary Figures")
-    
-    if not Path("./pauli_propagation_gpu.exe").exists():
-        print("\n✗ Error: pauli_propagation_gpu.exe not found")
-        print("Build with: cd src && make all")
-        sys.exit(1)
-    
+
+    gpu_exe = REPO_ROOT / "pauli_propagation_gpu.exe"
+    cpu_exe = REPO_ROOT / "pauli_propagation_cpu.exe"
+    if not gpu_exe.exists() and not cpu_exe.exists():
+        print("\n  [WARN] No pauli_propagation_*.exe found.")
+        print("  Build with: cd src && make all   (or: python3 scripts/build.py cpu)")
+        print("  Some scripts may fall back to CPU-only mode.\n")
+
     # Check matplotlib
     try:
         import matplotlib
-        print("\n✓ Matplotlib available")
+        print(f"\n  [OK] matplotlib {matplotlib.__version__} available")
     except ImportError:
-        print("\n⚠ Warning: matplotlib not installed")
-        print("Install with: pip install matplotlib")
-        print("Some plots will not be generated")
-    
-    # Run all scripts
+        print("\n  [WARN] matplotlib not installed — pip install matplotlib")
+
+    # Scripts to run (all in the same scripts/ directory)
     scripts = [
-        ("performance_analysis.py", "Performance Analysis - Speedup plots"),
-        ("algorithmic_visualization.py", "Algorithmic Visualization - Pauli dynamics"),
-        ("correctness_validation.py", "Correctness Validation - Test suite results"),
-        ("generate_report_figures.py", "Summary Figures - Overview plots")
+        ("performance_analysis.py",      "1. Performance Analysis — Speedup plots"),
+        ("algorithmic_visualization.py", "2. Algorithmic Visualization — Pauli dynamics"),
+        ("correctness_validation.py",    "3. Correctness Validation — Test suite results"),
+        ("generate_report_figures.py",   "4. Summary Figures — Overview plots"),
     ]
-    
+
     results = {}
-    for script, desc in scripts:
-        if Path(script).exists():
-            success = run_script(script, desc)
-            results[script] = success
+    for name, desc in scripts:
+        path = SCRIPTS_DIR / name
+        if path.exists():
+            results[name] = run_script(path, desc)
         else:
-            print(f"\n⚠ {script} not found - skipping")
-            results[script] = False
-    
-    # Summary
+            print(f"\n  [SKIP] {name} not found")
+            results[name] = None   # None = skipped, not failed
+
+    # ── Summary ────────────────────────────────────────────────────────────
     print("\n" + "="*70)
     print("GENERATION COMPLETE")
     print("="*70)
-    
-    successful = sum(1 for v in results.values() if v)
-    total = len(results)
-    
-    print(f"\nCompleted: {successful}/{total} scripts")
-    
-    # List generated files
-    print("\nGenerated Figures:")
+
+    ran      = {k: v for k, v in results.items() if v is not None}
+    skipped  = [k for k, v in results.items() if v is None]
+    passed   = sum(1 for v in ran.values() if v)
+
+    print(f"\n  Ran:     {len(ran)}/{len(results)} scripts")
+    print(f"  Passed:  {passed}/{len(ran)}")
+    if skipped:
+        print(f"  Skipped: {', '.join(skipped)}")
+
+    # List generated figure files (relative to repo root)
     figure_files = [
         "performance_analysis.png",
         "parameter_analysis.png",
@@ -102,25 +113,26 @@ def main():
         "timing_comparison.png",
         "speedup_chart.png",
         "performance_scaling.png",
-        "report_summary.png"
+        "report_summary.png",
     ]
-    
-    found = []
-    missing = []
+
+    found, missing = [], []
     for fig in figure_files:
-        if Path(fig).exists():
-            size_kb = Path(fig).stat().st_size / 1024
-            print(f"  ✓ {fig} ({size_kb:.1f} KB)")
-            found.append(fig)
+        p = REPO_ROOT / fig
+        if p.exists():
+            found.append((fig, p.stat().st_size / 1024))
         else:
             missing.append(fig)
-    
-    if missing:
-        print(f"\n⚠ Missing: {len(missing)} figures")
-        print("  (Some may require matplotlib or test execution)")
-    
-    print(f"\n✓ Total: {len(found)} figures generated")
-    print("\nFor interactive demo, run: python3 interactive_demo.py")
+
+    print("\n  Generated figures:")
+    for fig, kb in found:
+        print(f"    [OK]  {fig}  ({kb:.1f} KB)")
+    for fig in missing:
+        print(f"    [--]  {fig}  (not generated)")
+
+    print(f"\n  Total: {len(found)}/{len(figure_files)} figures present")
+    print(f"\n  To copy figures to local machine (run on local terminal):")
+    print(f"    scp arulm@ghc43.ghc.andrew.cmu.edu:~/Parallelizing-Pauli-Paths/*.png ./images/")
 
 if __name__ == "__main__":
     main()

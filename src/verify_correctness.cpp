@@ -201,6 +201,142 @@ static std::vector<Case> build_cases()
         }
         v.push_back({"7q 100w 20L RZ+CNOT (w≤4)", nq, obs, circ, 1e-8, 1e-6, 4}); }
 
+    // =======================================================================
+    // GPU-RIGOROUS TEST BLOCK
+    // Each case is designed to probe a distinct aspect of the GPU kernel.
+    // All use max_weight values that keep the live word count ≪ 102,400
+    // (GPU capacity = MAX_PAULI_WORDS/2 × MAX_BLOCKS = 256 × 400).
+    // Clifford-only circuits never expand word counts, so they can use
+    // large initial observables comparable to the actual benchmark suite.
+    // =======================================================================
+
+    // ---- GPU-1: large-word Clifford (benchmark scale) ----
+    // 5 000 random 7-qubit Pauli words, 100 H+CNOT layers, no truncation.
+    // Clifford gates permute Pauli words (no splitting), so word count stays
+    // ≤ 4^7 = 16 384.  Tests the GPU at the same scale as STRESS 30 (8K words).
+    {   int nq = 7;
+        std::map<PauliWord,Complex> obs;
+        std::mt19937_64 rng(42);
+        std::uniform_int_distribution<int> d(0,3);
+        std::uniform_real_distribution<double> rd(-1.0, 1.0);
+        for (int w=0; w<5000; ++w) {
+            PauliWord pw(nq);
+            for (int q=0;q<nq;++q) {
+                int op=d(rng);
+                if(op==1) pw.ops[q]=X;
+                else if(op==2) pw.ops[q]=Y;
+                else if(op==3) pw.ops[q]=Z;
+            }
+            obs[pw] += Complex(rd(rng), 0.0);
+        }
+        std::vector<Gate> circ;
+        for (int l=0;l<100;++l) {
+            for (int q=0;q<nq;++q) circ.push_back(Gate(HADAMARD,{q}));
+            for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
+        }
+        v.push_back({"GPU-1: 7q 5Kw 100L Clifford", nq, obs, circ, 1e-6, 1e-4}); }
+
+    // ---- GPU-2: all rotation gate types (RZ + RX + RY + CNOT) w≤4 ----
+    // Tests all non-Clifford gate paths in the GPU kernel together.
+    {   int nq = 7;
+        std::map<PauliWord,Complex> obs;
+        std::mt19937_64 rng(2024);
+        std::uniform_int_distribution<int> d(0,3);
+        for (int w=0; w<80; ++w) {
+            PauliWord pw(nq);
+            for (int q=0;q<nq;++q) {
+                int op=d(rng);
+                if(op==1) pw.ops[q]=X;
+                else if(op==2) pw.ops[q]=Y;
+                else if(op==3) pw.ops[q]=Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+        std::vector<Gate> circ;
+        for (int l=0;l<15;++l) {
+            for (int q=0;q<nq;++q) circ.push_back(Gate(RZ,{q}, 0.1*(l+1)));
+            for (int q=0;q<nq;++q) circ.push_back(Gate(RX,{q}, 0.07*(l+1)));
+            for (int q=0;q<nq;++q) circ.push_back(Gate(RY,{q}, 0.13*(l+1)));
+            for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
+        }
+        v.push_back({"GPU-2: 7q all-rotation 15L (w≤4)", nq, obs, circ, 1e-6, 1e-4, 4}); }
+
+    // ---- GPU-3: complex-coefficient observable ----
+    // Observable has both real and imaginary coefficients.
+    // Tests that the GPU coefficient arithmetic is exact on complex inputs.
+    {   int nq = 6;
+        std::map<PauliWord,Complex> obs;
+        std::mt19937_64 rng(314);
+        std::uniform_int_distribution<int> d(0,3);
+        std::uniform_real_distribution<double> rc(-1.0, 1.0);
+        for (int w=0; w<200; ++w) {
+            PauliWord pw(nq);
+            for (int q=0;q<nq;++q) {
+                int op=d(rng);
+                if(op==1) pw.ops[q]=X;
+                else if(op==2) pw.ops[q]=Y;
+                else if(op==3) pw.ops[q]=Z;
+            }
+            obs[pw] += Complex(rc(rng), rc(rng));
+        }
+        std::vector<Gate> circ;
+        for (int l=0;l<40;++l) {
+            for (int q=0;q<nq;++q) circ.push_back(Gate(HADAMARD,{q}));
+            for (int q=0;q<nq;++q) circ.push_back(Gate(S,{q}));
+            for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
+        }
+        v.push_back({"GPU-3: 6q complex-coeff 40L Clifford", nq, obs, circ, 1e-6, 1e-4}); }
+
+    // ---- GPU-4: T-gate (non-Clifford, non-rotation) ----
+    // T gate is implemented differently from RZ/RX/RY in the GPU kernel.
+    // Verify it matches the CPU reference.
+    {   int nq = 7;
+        std::map<PauliWord,Complex> obs;
+        std::mt19937_64 rng(777);
+        std::uniform_int_distribution<int> d(0,3);
+        for (int w=0; w<150; ++w) {
+            PauliWord pw(nq);
+            for (int q=0;q<nq;++q) {
+                int op=d(rng);
+                if(op==1) pw.ops[q]=X;
+                else if(op==2) pw.ops[q]=Y;
+                else if(op==3) pw.ops[q]=Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+        std::vector<Gate> circ;
+        for (int l=0;l<30;++l) {
+            for (int q=0;q<nq;++q) circ.push_back(Gate(T,{q}));
+            for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
+            for (int q=0;q<nq;++q) circ.push_back(Gate(HADAMARD,{q}));
+        }
+        v.push_back({"GPU-4: 7q T+CNOT+H 30L (w≤5)", nq, obs, circ, 1e-6, 1e-4, 5}); }
+
+    // ---- GPU-5: 9-qubit circuit (near MAX_QUBITS=10) ----
+    // Tests that the qubit-dimension code path is correct for larger systems.
+    // Clifford-only so no word-count explosion.
+    {   int nq = 9;
+        std::map<PauliWord,Complex> obs;
+        std::mt19937_64 rng(9999);
+        std::uniform_int_distribution<int> d(0,3);
+        for (int w=0; w<500; ++w) {
+            PauliWord pw(nq);
+            for (int q=0;q<nq;++q) {
+                int op=d(rng);
+                if(op==1) pw.ops[q]=X;
+                else if(op==2) pw.ops[q]=Y;
+                else if(op==3) pw.ops[q]=Z;
+            }
+            obs[pw] += Complex(1.0, 0.0);
+        }
+        std::vector<Gate> circ;
+        for (int l=0;l<30;++l) {
+            for (int q=0;q<nq;++q)   circ.push_back(Gate(HADAMARD,{q}));
+            for (int q=0;q+1<nq;++q) circ.push_back(Gate(CNOT,{q,q+1}));
+            circ.push_back(Gate(CNOT,{nq-1,0}));  // wrap-around CNOT
+        }
+        v.push_back({"GPU-5: 9q 500w 30L Clifford", nq, obs, circ, 1e-6, 1e-4}); }
+
     return v;
 }
 
