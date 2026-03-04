@@ -41,7 +41,7 @@ GPU_EXE    = REPO_ROOT / "pauli_propagation_gpu.exe"
 #   index  22     → MultiBlock A
 #   index  23     → MultiBlock B
 #   indices 24-33 → STRESS 23 through STRESS 32
-DEFAULT_STRESS_TESTS = list(range(24, 34))   # STRESS 23-32 at vector indices 24-33
+DEFAULT_STRESS_TESTS = list(range(24, 37))   # STRESS 23-32 (idx 24-33) + LARGE 1-3 (idx 34-36)
 OMP_THREAD_COUNTS    = [1, 2, 4, 8, 16]
 TIMEOUT_SECONDS      = 300                   # 5 min per test
 

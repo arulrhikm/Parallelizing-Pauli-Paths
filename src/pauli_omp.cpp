@@ -78,6 +78,11 @@ Complex pauli_propagation_omp(const std::map<PauliWord, Complex> &init,
 
             // Each word is completely independent through the whole Clifford block.
             // ONE parallel region, ONE barrier, any number of gates.
+            //
+            // Weight truncation is enforced gate-by-gate inside the inner loop:
+            // if a word's weight exceeds max_weight after any gate, it is killed
+            // immediately (coef set to 0 and loop broken).  This exactly matches
+            // the sequential implementation which truncates after every gate.
             #pragma omp parallel for schedule(static) num_threads(num_threads)
             for (int j = 0; j < n; ++j) {
                 PauliWord pw  = obs[j].first;
@@ -88,10 +93,23 @@ Complex pauli_propagation_omp(const std::map<PauliWord, Complex> &init,
                     coef *= out.phase;   // absorb phase into coefficient
                     out.phase = 1.0;
                     pw = std::move(out);
+                    // Truncate: kill word if it exceeds max_weight (matches
+                    // the per-gate truncation in the sequential implementation).
+                    if (pw.weight() > max_weight) {
+                        coef = 0.0;
+                        break;
+                    }
                 }
                 obs[j] = {std::move(pw), coef};
             }
-            // No merge needed – Clifford bijection keeps all keys distinct.
+            // Remove dead words (weight exceeded max_weight or negligible coeff).
+            // No merge needed – Clifford bijection keeps surviving keys distinct.
+            obs.erase(
+                std::remove_if(obs.begin(), obs.end(),
+                    [](const std::pair<PauliWord, Complex> &p) {
+                        return std::abs(p.second) <= 1e-10;
+                    }),
+                obs.end());
 
             gi = block_lo - 1;   // skip the entire block
 

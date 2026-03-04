@@ -636,6 +636,89 @@ static vector<TestCase> create_test_cases() {
     tests.push_back({"STRESS 32: 7q, 5K words, 120 layers", nq, obs, circ, Complex(0.0, 0.0), 1e-7, 1});
   }
 
+  // Test 34: LARGE-1: 9q, 20K words, 30 layers
+  // max_weight=10 >= 9 = nq, so no truncation → word count constant.
+  // With 20K words the GPU uses ~78 blocks (78/46 SMs ≈ 1.7 blocks/SM, 35% utilisation).
+  // At this scale GPU should be competitive with OMP-8t.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3301);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 20000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 30; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"LARGE-1: 9q, 20K words, 30 layers", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 35: LARGE-2: 9q, 50K words, 20 layers
+  // ~195 blocks → GPU uses ~4 blocks/SM → fully saturated → GPU should clearly beat OMP.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3401);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 50000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 20; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"LARGE-2: 9q, 50K words, 20 layers", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 36: LARGE-3: 9q, 100K words, 10 layers
+  // ~380 blocks (just within MAX_BLOCKS=400) → GPU fully saturated → maximum GPU advantage.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3501);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 100000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 10; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"LARGE-3: 9q, 100K words, 10 layers", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
   // // MultiBlock B: Testing multi threadblocks with rotations
   // {
   //   int nq = 9;
