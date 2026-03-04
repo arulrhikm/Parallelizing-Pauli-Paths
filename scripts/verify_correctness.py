@@ -64,7 +64,7 @@ def build_gpu(nvcc, cxx):
     # nvcc needs the C++ compiler that produced the .o files to be compatible.
     # Use -Xcompiler to pass -fopenmp to the host compiler.
     flags = BASE_FLAGS + ["-DOMP_ENABLED",
-                          f"-ccbin {cxx}",
+                          "-ccbin", cxx,
                           "-Xcompiler", "-fopenmp"]
     sources = ["pauli.cpp", "pauli_omp.cpp", "pauli_gpu.cu", "verify_correctness.cpp"]
     cmd = [nvcc] + flags + sources + ["-o", str(GPU_EXE)]
