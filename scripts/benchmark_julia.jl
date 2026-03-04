@@ -2,26 +2,17 @@
 # =============================================================================
 # benchmark_julia.jl  –  Task 1.2 external-tool comparison
 # =============================================================================
-# Benchmarks the same 10 stress-test circuits (matching tests 23-32 in
-# tests.cpp) using PauliPropagation.jl.
+# Benchmarks the same stress-test circuits (matching tests.cpp) using
+# PauliPropagation.jl.
 #
 # Install PauliPropagation.jl first:
 #   julia -e 'using Pkg; Pkg.add("PauliPropagation")'
 #
 # Run:
 #   julia scripts/benchmark_julia.jl
-#
-# The script prints timing in the same format as run_benchmark.py so the
-# results can be compared directly.
-#
-# PauliPropagation.jl reference:
-#   https://github.com/MSRudolph/PauliPropagation.jl
-#   Rudolph et al., "Classical simulations of noisy variational quantum
-#   circuits via Pauli propagation" (2023)
 # =============================================================================
 
 using Pkg
-# Auto-install if missing
 try
     using PauliPropagation
 catch
@@ -34,14 +25,20 @@ using Random, Statistics, Printf
 
 # ---------------------------------------------------------------------------
 # Helper: build a random Pauli observable matching tests.cpp
+#
+# API (current PauliPropagation.jl):
+#   PauliString(nqubits, paulis::Symbol,         qind::Int,          coeff=1.0)
+#   PauliString(nqubits, paulis::Vector{Symbol}, qinds::Vector{Int}, coeff=1.0)
+#   add!(psum, pstr.term, pstr.coeff)   # add into PauliSum via integer term
 # ---------------------------------------------------------------------------
+const CHAR_TO_SYM = Dict('X' => :X, 'Y' => :Y, 'Z' => :Z)
+
 function make_random_obs(nq::Int, nwords::Int, seed::Int)
     rng = MersenneTwister(seed)
     pauli_chars = ['I', 'X', 'Y', 'Z']
 
-    # PauliPropagation.jl uses PauliSum of PauliString objects
-    # PauliString(nq, paulis::String, coeff=1.0)
-    terms = Dict{String, ComplexF64}()
+    # Accumulate coefficients for duplicate strings (matches tests.cpp behavior)
+    terms = Dict{String, Float64}()
     for _ in 1:nwords
         ops = join([pauli_chars[rand(rng, 1:4)] for _ in 1:nq])
         terms[ops] = get(terms, ops, 0.0) + 1.0
@@ -49,50 +46,64 @@ function make_random_obs(nq::Int, nwords::Int, seed::Int)
 
     obs = PauliSum(nq)
     for (s, c) in terms
-        add!(obs, c, PauliString(nq, s))
+        syms   = Symbol[]
+        qinds  = Int[]
+        for (q, ch) in enumerate(s)
+            if ch != 'I'
+                push!(syms,  CHAR_TO_SYM[ch])
+                push!(qinds, q)
+            end
+        end
+        # Pure identity: skip (contributes a constant, irrelevant for propagation)
+        isempty(syms) && continue
+
+        if length(syms) == 1
+            pstr = PauliString(nq, syms[1], qinds[1], c)
+        else
+            pstr = PauliString(nq, syms, qinds, c)
+        end
+        add!(obs, pstr.term, pstr.coeff)
     end
     return obs
 end
 
 # ---------------------------------------------------------------------------
-# Helper: build a layered circuit of H + CNOT (matches tests 23-32)
+# Helper: build a layered circuit of H/S + CNOT gates
+#
+# API: circuit is a Vector{CliffordGate}
+#   CliffordGate(:H,    qubit_index)
+#   CliffordGate(:S,    qubit_index)
+#   CliffordGate(:CNOT, [control, target])
 # ---------------------------------------------------------------------------
-function make_h_cnot_circuit(nq::Int, nlayers::Int)
-    circ = []
+function build_circuit(nq::Int, nlayers::Int, gate_type::Symbol)
+    circuit = Gate[]
     for _ in 1:nlayers
-        for q in 1:nq
-            push!(circ, (gate=:H, qubit=q))
+        if gate_type == :h_cnot
+            for q in 1:nq
+                push!(circuit, CliffordGate(:H, q))
+            end
+        else   # :s_cnot
+            for q in 1:nq
+                push!(circuit, CliffordGate(:S, q))
+            end
         end
-        for q in 1:(nq-1)
-            push!(circ, (gate=:CNOT, control=q, target=q+1))
-        end
-    end
-    return circ
-end
-
-# Apply circuit using PauliPropagation.jl API
-function apply_circuit!(obs, circ, nq)
-    for g in circ
-        if g.gate == :H
-            hadamard!(obs, g.qubit)
-        elseif g.gate == :CNOT
-            cnot!(obs, g.control, g.target)
-        elseif g.gate == :S
-            sgate!(obs, g.qubit)
+        for q in 1:(nq - 1)
+            push!(circuit, CliffordGate(:CNOT, [q, q + 1]))
         end
     end
+    return circuit
 end
 
 # ---------------------------------------------------------------------------
 # Stress test definitions (matching tests.cpp exactly)
 # ---------------------------------------------------------------------------
 struct StressTest
-    name::String
-    nq::Int
-    nwords::Int
-    nlayers::Int
-    seed::Int
-    gate_type::Symbol   # :h_cnot or :s_cnot
+    name      :: String
+    nq        :: Int
+    nwords    :: Int
+    nlayers   :: Int
+    seed      :: Int
+    gate_type :: Symbol   # :h_cnot or :s_cnot
 end
 
 STRESS_TESTS = [
@@ -109,34 +120,6 @@ STRESS_TESTS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Build circuit matching tests.cpp gate patterns
-# ---------------------------------------------------------------------------
-function build_circuit(st::StressTest)
-    nq, nl = st.nq, st.nlayers
-    circ = []
-    if st.gate_type == :h_cnot
-        for _ in 1:nl
-            for q in 1:nq
-                push!(circ, (gate=:H, qubit=q, control=0, target=0))
-            end
-            for q in 1:(nq-1)
-                push!(circ, (gate=:CNOT, qubit=0, control=q, target=q+1))
-            end
-        end
-    else  # :s_cnot
-        for _ in 1:nl
-            for q in 1:nq
-                push!(circ, (gate=:S, qubit=q, control=0, target=0))
-            end
-            for q in 1:(nq-1)
-                push!(circ, (gate=:CNOT, qubit=0, control=q, target=q+1))
-            end
-        end
-    end
-    return circ
-end
-
-# ---------------------------------------------------------------------------
 # Main benchmark loop
 # ---------------------------------------------------------------------------
 MAX_WEIGHT = 10
@@ -148,44 +131,48 @@ println("  Julia $(VERSION)")
 println("=" ^ 70)
 println()
 
-# Warm-up (JIT compile)
+# Warm-up run (trigger JIT compilation before timing)
 let
-    obs = make_random_obs(3, 10, 42)
-    circ = build_circuit(StressTest("warmup", 3, 10, 2, 42, :h_cnot))
+    obs_w  = make_random_obs(3, 10, 42)
+    circ_w = build_circuit(3, 2, :h_cnot)
     t0 = time()
-    propagate!(obs, circ, max_weight=MAX_WEIGHT)
-    println("  JIT warm-up: $(round(time()-t0, digits=3)) s")
+    # circuit comes FIRST, then the PauliSum
+    propagate!(circ_w, obs_w; max_weight = MAX_WEIGHT)
+    println("  JIT warm-up: $(round(time() - t0, digits=3)) s")
 end
 println()
 
 timings = Float64[]
 
-println(@sprintf("%-45s  %10s", "Test", "Time (s)"))
-println("-" ^ 58)
+println(@sprintf("%-45s  %10s  %8s", "Test", "Time (s)", "#Terms"))
+println("-" ^ 67)
 
 for st in STRESS_TESTS
     obs  = make_random_obs(st.nq, st.nwords, st.seed)
-    circ = build_circuit(st)
+    circ = build_circuit(st.nq, st.nlayers, st.gate_type)
 
-    # Run twice; take second (avoids first-call overhead)
+    # Run twice; report the second (avoids per-run JIT overhead)
+    local elapsed = 0.0
+    local nterms  = 0
     for trial in 1:2
-        obs_copy = deepcopy(obs)
-        t0 = time()
-        propagate!(obs_copy, circ, max_weight=MAX_WEIGHT)
-        elapsed = time() - t0
-        if trial == 2
-            push!(timings, elapsed)
-            println(@sprintf("%-45s  %10.4f", st.name[1:min(end,44)], elapsed))
-        end
+        obs_copy = copy(obs)
+        t0       = time()
+        # NOTE: propagate! takes (circuit, psum; kwargs...) — circuit first!
+        result   = propagate!(circ, obs_copy; max_weight = MAX_WEIGHT)
+        elapsed  = time() - t0
+        nterms   = length(result)
     end
+
+    push!(timings, elapsed)
+    println(@sprintf("%-45s  %10.4f  %8d", st.name[1:min(end, 44)], elapsed, nterms))
 end
 
 println()
 println("=" ^ 70)
 println("  SUMMARY")
-println("  Mean time: $(round(mean(timings), digits=4)) s")
-println("  Max  time: $(round(maximum(timings), digits=4)) s")
+@printf "  Mean time: %.4f s\n" mean(timings)
+@printf "  Max  time: %.4f s\n" maximum(timings)
 println()
 println("  Compare these times to scripts/benchmark_results.csv")
-println("  (CPU-seq, OMP, GPU columns) for the same test indices 23-32.")
+println("  (cpu_seq column) for test indices 24-33.")
 println("=" ^ 70)
