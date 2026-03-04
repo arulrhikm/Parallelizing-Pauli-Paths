@@ -2,15 +2,15 @@
 """
 run_benchmark.py  –  Three-way benchmark (CPU-seq vs OMP vs GPU)
 ================================================================
-Default test set is GPU-favorable: word counts from 4K → 100K where
-GPU advantage grows monotonically with problem size (1.4× → 6.8× over OMP-8t).
+Full 23-test suite covering STRESS (7q), SCALE (9q), and DIVERSE
+(10q, varied gate sets: H, S, T, RZ, RX, CNOT).
 
   • CPU sequential  (pauli_propagation_cpu.exe)
   • OMP 1, 2, 4, 8, 16 threads  (pauli_propagation_omp.exe)
   • GPU  (pauli_propagation_gpu.exe)   [optional]
 
 Usage (from repo root on GHC / any Linux machine with the executables built):
-    python3 scripts/run_benchmark.py [--no-gpu] [--tests 25,28,31,34,35,36,37,38]
+    python3 scripts/run_benchmark.py [--no-gpu] [--tests 24-46]
 
 Build the executables first:
     cd src
@@ -48,17 +48,21 @@ GPU_EXE    = REPO_ROOT / "pauli_propagation_gpu.exe"
 #   index  22     → MultiBlock A
 #   index  23     → MultiBlock B
 #   indices 24-33 → STRESS 23 through STRESS 32
-# GPU-favorable selection: word count 4K → 100K (existing SCALE tests) plus
-# 8 new DIVERSE tests covering H+CNOT, T, S, RZ, RX, mixed Clifford.
-# Tests with <4K words are excluded (GPU underutilised on RTX 2080's 46 SMs).
-DEFAULT_STRESS_TESTS = [25, 28, 31, 34, 35, 36, 37, 38,   # SCALE
-                        39, 40, 41, 42, 43, 44, 45, 46]   # DIVERSE
+# Full 23-test suite: STRESS (7q) + SCALE (9q) + DIVERSE (9-10q, varied gates)
+DEFAULT_STRESS_TESTS = list(range(24, 47))
 
 # Human-readable labels for the shared results file (0-based test index → name)
 TEST_LABELS = {
+    24: "STRESS 23: 7q, 2K words, 100 layers",
     25: "STRESS 24: 7q, 5K words, 150 layers",
+    26: "STRESS 25: 7q, 3K words, 200 layers",
+    27: "STRESS 26: 7q, 1K words, 300 layers",
     28: "STRESS 27: 7q, 4K words, 100 layers",
+    29: "STRESS 28: 7q, 2K words, 250 layers",
+    30: "STRESS 29: 7q, 1K words, 400 layers",
     31: "STRESS 30: 7q, 8K words, 50 layers",
+    32: "STRESS 31: 7q, 500 words, 500 layers",
+    33: "STRESS 32: 7q, 5K words, 120 layers",
     34: "SCALE-1: 9q, 10K words, 30 layers",
     35: "SCALE-2: 9q, 15K words, 30 layers",
     36: "SCALE-3: 9q, 20K words, 30 layers",
@@ -71,7 +75,7 @@ TEST_LABELS = {
     43: "DIVERSE-5: 9q, 5K RZ+CNOT, 8L",
     44: "DIVERSE-6: 9q, 4K RX+H+CNOT, 6L",
     45: "DIVERSE-7: 10q, 25K H+S+T+CNOT, 15L",
-    46: "DIVERSE-8: 9q, 8K->~40K RZ+RX+H+CNOT, 15L",
+    46: "DIVERSE-8: 9q, 8K RZ+RX+H+CNOT, 15L",
 }
 OMP_THREAD_COUNTS    = [1, 2, 4, 8, 16]
 TIMEOUT_SECONDS      = 300                   # 5 min per test
@@ -160,8 +164,8 @@ def main():
     ap = argparse.ArgumentParser(description="Pauli propagation three-way benchmark")
     ap.add_argument("--no-gpu",  action="store_true", help="Skip GPU runs")
     ap.add_argument("--no-cpu",  action="store_true", help="Skip sequential CPU runs")
-    ap.add_argument("--tests", default="25,28,31,34,35,36,37,38",
-                    help="0-based vector indices, e.g. '24-33' or '25,28,31,34,35,36,37,38'")
+    ap.add_argument("--tests", default="24-46",
+                    help="0-based vector indices, e.g. '24-46' or '24,25,34,39'")
     ap.add_argument("--threads", default=",".join(map(str, OMP_THREAD_COUNTS)),
                     help="Comma-separated OMP thread counts")
     ap.add_argument("--out", default="benchmark_results.csv",
@@ -360,6 +364,8 @@ def main():
                                        time_s=g, source="run_benchmark"))
         if shared:
             append_rows(shared)
+    else:
+        print("  [NOTE] shared_results module not found - results not written to benchmark_summary.json")
 
 
 if __name__ == "__main__":

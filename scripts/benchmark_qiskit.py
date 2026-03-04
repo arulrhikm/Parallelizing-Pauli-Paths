@@ -187,7 +187,8 @@ print("NOTE: Qiskit evolve() is EXACT (no weight truncation).")
 print("      For Clifford-only tests (H+CNOT, S+CNOT), results are exact")
 print("      and comparable to our CPU-seq times.\n")
 
-timings = []
+timings  = []   # evolve wall-clock seconds per test (-1 = error, -2 = skip)
+nterms_l = []   # output Pauli-word count per test (-1 = unknown)
 skip_tags = set()
 
 print(f"{'Test':<50}  {'Build(s)':>8}  {'Evolve(s)':>9}  {'Terms':>8}")
@@ -198,7 +199,8 @@ for tc in STRESS_TESTS:
     skip_clifford = tc.get("skip_clifford", False)
 
     if skip_clifford:
-        timings.append(-2.0)          # sentinel: skipped (non-Clifford)
+        timings.append(-2.0)
+        nterms_l.append(-1)
         skip_tags.add(tc["gates"])
         name_short = tc["name"][:49]
         print(f"{name_short:<50}  {'N/A':>8}  {'SKIP (non-Clifford RZ/RX)':>9}")
@@ -214,21 +216,23 @@ for tc in STRESS_TESTS:
         qc = make_circuit(nq, nl, tc["gates"])
     except ValueError as e:
         timings.append(-1.0)
+        nterms_l.append(-1)
         print(f"  ERROR building circuit: {e}")
         continue
 
     # Evolve (timed)
     t0 = time.perf_counter()
     try:
-        evolved = evolve_observable(obs, qc)
+        evolved  = evolve_observable(obs, qc)
         evolve_t = time.perf_counter() - t0
-        nterms = len(evolved)
+        nterms   = len(evolved)
     except Exception as e:
         evolve_t = -1.0
-        nterms = -1
+        nterms   = -1
         print(f"  ERROR: {e}")
 
     timings.append(evolve_t)
+    nterms_l.append(nterms)
     name_short = tc["name"][:49]
     print(f"{name_short:<50}  {build_t:>8.4f}  {evolve_t:>9.4f}  {nterms:>8}")
 
@@ -248,9 +252,9 @@ if skip_tags:
 out = REPO_ROOT / "scripts" / "benchmark_qiskit_results.csv"
 with open(out, "w", newline="") as f:
     w = csv.writer(f)
-    w.writerow(["test", "test_index", "qiskit_evolve_s"])
-    for tc, t in zip(STRESS_TESTS, timings):
-        w.writerow([tc["name"], tc.get("idx", -1), t])
+    w.writerow(["test", "test_index", "qiskit_evolve_s", "nterms"])
+    for tc, t, nt in zip(STRESS_TESTS, timings, nterms_l):
+        w.writerow([tc["name"], tc.get("idx", -1), t, nt])
 
 print(f"\n  Results saved to: {out}")
 print()
@@ -258,10 +262,10 @@ print("  Compare 'qiskit_evolve_s' to 'cpu_seq' in benchmark_results.csv")
 print("  to show the speedup of our GPU over Qiskit's exact CPU propagation.")
 print("=" * 70)
 
-# Write to shared benchmark_summary.csv
+# Write to shared benchmark_summary.json
 if _SHARED_OK:
     shared = []
-    for tc, t in zip(STRESS_TESTS, timings):
+    for tc, t, nt in zip(STRESS_TESTS, timings, nterms_l):
         if t > 0:
             shared.append(SRow(
                 test_index = tc.get("idx", -1),
@@ -269,8 +273,11 @@ if _SHARED_OK:
                 backend    = "qiskit",
                 threads    = 1,
                 time_s     = t,
+                nterms     = nt,
                 source     = "benchmark_qiskit",
                 notes      = "exact Clifford sim via PauliList.evolve(Clifford(qc))",
             ))
     if shared:
         append_rows(shared)
+    else:
+        print("  [NOTE] No successful Qiskit results to write to benchmark_summary.json")

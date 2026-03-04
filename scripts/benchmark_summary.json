@@ -2,200 +2,218 @@
   "benchmark_qiskit::STRESS 23: 7q, 2K words, 100 layers::qiskit::1": {
     "test_name": "STRESS 23: 7q, 2K words, 100 layers",
     "backend": "qiskit",
-    "time_s": 0.013102700002491474,
+    "time_s": 0.018460999999661,
     "source": "benchmark_qiskit",
     "test_index": 24,
     "threads": 1,
+    "nterms": 1878,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 24: 7q, 5K words, 150 layers::qiskit::1": {
     "test_name": "STRESS 24: 7q, 5K words, 150 layers",
     "backend": "qiskit",
-    "time_s": 0.0192998999991687,
+    "time_s": 0.023858900007326156,
     "source": "benchmark_qiskit",
     "test_index": 25,
     "threads": 1,
+    "nterms": 4307,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 25: 7q, 3K words, 200 layers::qiskit::1": {
     "test_name": "STRESS 25: 7q, 3K words, 200 layers",
     "backend": "qiskit",
-    "time_s": 0.02435160000459291,
+    "time_s": 0.029222700002719648,
     "source": "benchmark_qiskit",
     "test_index": 26,
     "threads": 1,
+    "nterms": 2742,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 26: 7q, 1K words, 300 layers::qiskit::1": {
     "test_name": "STRESS 26: 7q, 1K words, 300 layers",
     "backend": "qiskit",
-    "time_s": 0.029330100005608983,
+    "time_s": 0.037575900001684204,
     "source": "benchmark_qiskit",
     "test_index": 27,
     "threads": 1,
+    "nterms": 972,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 27: 7q, 4K words, 100 layers::qiskit::1": {
     "test_name": "STRESS 27: 7q, 4K words, 100 layers",
     "backend": "qiskit",
-    "time_s": 0.014132500000414439,
+    "time_s": 0.016516500007128343,
     "source": "benchmark_qiskit",
     "test_index": 28,
     "threads": 1,
+    "nterms": 3511,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 28: 7q, 2K words, 250 layers::qiskit::1": {
     "test_name": "STRESS 28: 7q, 2K words, 250 layers",
     "backend": "qiskit",
-    "time_s": 0.02590490000147838,
+    "time_s": 0.030835099998512305,
     "source": "benchmark_qiskit",
     "test_index": 29,
     "threads": 1,
+    "nterms": 1896,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 29: 7q, 1K words, 400 layers::qiskit::1": {
     "test_name": "STRESS 29: 7q, 1K words, 400 layers",
     "backend": "qiskit",
-    "time_s": 0.03991190000670031,
+    "time_s": 0.05001560000528116,
     "source": "benchmark_qiskit",
     "test_index": 30,
     "threads": 1,
+    "nterms": 970,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 30: 7q, 8K words,  50 layers::qiskit::1": {
     "test_name": "STRESS 30: 7q, 8K words,  50 layers",
     "backend": "qiskit",
-    "time_s": 0.01370630000019446,
+    "time_s": 0.014317200009827502,
     "source": "benchmark_qiskit",
     "test_index": 31,
     "threads": 1,
+    "nterms": 6307,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 31: 7q, 500 words, 500 layers::qiskit::1": {
     "test_name": "STRESS 31: 7q, 500 words, 500 layers",
     "backend": "qiskit",
-    "time_s": 0.04833350000262726,
+    "time_s": 0.056171400006860495,
     "source": "benchmark_qiskit",
     "test_index": 32,
     "threads": 1,
+    "nterms": 497,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::STRESS 32: 7q, 5K words, 120 layers::qiskit::1": {
     "test_name": "STRESS 32: 7q, 5K words, 120 layers",
     "backend": "qiskit",
-    "time_s": 0.01790150000306312,
+    "time_s": 0.019097900003544055,
     "source": "benchmark_qiskit",
     "test_index": 33,
     "threads": 1,
+    "nterms": 4308,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::SCALE-1: 9q, 10K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-1: 9q, 10K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.018971800003782846,
+    "time_s": 0.02421070000855252,
     "source": "benchmark_qiskit",
     "test_index": 34,
     "threads": 1,
+    "nterms": 9826,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::SCALE-2: 9q, 15K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-2: 9q, 15K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.025287399999797344,
+    "time_s": 0.03006229999300558,
     "source": "benchmark_qiskit",
     "test_index": 35,
     "threads": 1,
+    "nterms": 14555,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::SCALE-3: 9q, 20K words, 30 layers::qiskit::1": {
     "test_name": "SCALE-3: 9q, 20K words, 30 layers",
     "backend": "qiskit",
-    "time_s": 0.04048450000118464,
+    "time_s": 0.03366159999859519,
     "source": "benchmark_qiskit",
     "test_index": 36,
     "threads": 1,
+    "nterms": 19268,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::SCALE-4: 9q, 50K words, 20 layers::qiskit::1": {
     "test_name": "SCALE-4: 9q, 50K words, 20 layers",
     "backend": "qiskit",
-    "time_s": 0.0708504000067478,
+    "time_s": 0.14500750000297558,
     "source": "benchmark_qiskit",
     "test_index": 37,
     "threads": 1,
+    "nterms": 45563,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::SCALE-5: 9q, 100K words, 10 layers::qiskit::1": {
     "test_name": "SCALE-5: 9q, 100K words, 10 layers",
     "backend": "qiskit",
-    "time_s": 0.13900690000446048,
+    "time_s": 0.29250570001022425,
     "source": "benchmark_qiskit",
     "test_index": 38,
     "threads": 1,
+    "nterms": 83099,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::DIVERSE-1: 10q, 30K H+CNOT, 20L::qiskit::1": {
     "test_name": "DIVERSE-1: 10q, 30K H+CNOT, 20L",
     "backend": "qiskit",
-    "time_s": 0.04797100000723731,
+    "time_s": 0.10158190000220202,
     "source": "benchmark_qiskit",
     "test_index": 39,
     "threads": 1,
+    "nterms": 29616,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::DIVERSE-2: 10q, 60K H+CNOT, 10L::qiskit::1": {
     "test_name": "DIVERSE-2: 10q, 60K H+CNOT, 10L",
     "backend": "qiskit",
-    "time_s": 0.09905350000190083,
+    "time_s": 0.2061295000021346,
     "source": "benchmark_qiskit",
     "test_index": 40,
     "threads": 1,
+    "nterms": 58371,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "benchmark_qiskit::DIVERSE-4: 9q, 35K S+H+CNOT, 20L::qiskit::1": {
     "test_name": "DIVERSE-4: 9q, 35K S+H+CNOT, 20L",
     "backend": "qiskit",
-    "time_s": 0.05088830000022426,
+    "time_s": 0.09688029999961145,
     "source": "benchmark_qiskit",
     "test_index": 42,
     "threads": 1,
+    "nterms": 32764,
     "correct": "N/A",
     "notes": "exact Clifford sim via PauliList.evolve(Clifford(qc))",
-    "timestamp": "2026-03-04T06:32:41Z"
+    "timestamp": "2026-03-04T06:49:55Z"
   },
   "verify_correctness::H|ZâŸ©::omp::1": {
     "test_name": "H|ZâŸ©",
@@ -204,9 +222,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::H|ZâŸ©::omp::4": {
     "test_name": "H|ZâŸ©",
@@ -215,9 +234,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::H|ZâŸ©::omp::16": {
     "test_name": "H|ZâŸ©",
@@ -226,9 +246,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::H|XâŸ©::omp::1": {
     "test_name": "H|XâŸ©",
@@ -237,9 +258,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::H|XâŸ©::omp::4": {
     "test_name": "H|XâŸ©",
@@ -248,9 +270,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::H|XâŸ©::omp::16": {
     "test_name": "H|XâŸ©",
@@ -259,9 +282,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::HH|ZâŸ©::omp::1": {
     "test_name": "HH|ZâŸ©",
@@ -270,9 +294,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::HH|ZâŸ©::omp::4": {
     "test_name": "HH|ZâŸ©",
@@ -281,9 +306,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::HH|ZâŸ©::omp::16": {
     "test_name": "HH|ZâŸ©",
@@ -292,9 +318,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::SS|ZâŸ©::omp::1": {
     "test_name": "SS|ZâŸ©",
@@ -303,9 +330,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::SS|ZâŸ©::omp::4": {
     "test_name": "SS|ZâŸ©",
@@ -314,9 +342,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::SS|ZâŸ©::omp::16": {
     "test_name": "SS|ZâŸ©",
@@ -325,9 +354,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::S|XâŸ©::omp::1": {
     "test_name": "S|XâŸ©",
@@ -336,9 +366,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::S|XâŸ©::omp::4": {
     "test_name": "S|XâŸ©",
@@ -347,9 +378,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::S|XâŸ©::omp::16": {
     "test_name": "S|XâŸ©",
@@ -358,9 +390,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::T|XâŸ©::omp::1": {
     "test_name": "T|XâŸ©",
@@ -369,9 +402,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::T|XâŸ©::omp::4": {
     "test_name": "T|XâŸ©",
@@ -380,9 +414,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::T|XâŸ©::omp::16": {
     "test_name": "T|XâŸ©",
@@ -391,9 +426,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ(Ï€/6)|XâŸ©::omp::1": {
     "test_name": "RZ(Ï€/6)|XâŸ©",
@@ -402,9 +438,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ(Ï€/6)|XâŸ©::omp::4": {
     "test_name": "RZ(Ï€/6)|XâŸ©",
@@ -413,9 +450,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ(Ï€/6)|XâŸ©::omp::16": {
     "test_name": "RZ(Ï€/6)|XâŸ©",
@@ -424,9 +462,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RX(Ï€/4)|ZâŸ©::omp::1": {
     "test_name": "RX(Ï€/4)|ZâŸ©",
@@ -435,9 +474,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RX(Ï€/4)|ZâŸ©::omp::4": {
     "test_name": "RX(Ï€/4)|ZâŸ©",
@@ -446,9 +486,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RX(Ï€/4)|ZâŸ©::omp::16": {
     "test_name": "RX(Ï€/4)|ZâŸ©",
@@ -457,9 +498,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RY(Ï€/3)|XâŸ©::omp::1": {
     "test_name": "RY(Ï€/3)|XâŸ©",
@@ -468,9 +510,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RY(Ï€/3)|XâŸ©::omp::4": {
     "test_name": "RY(Ï€/3)|XâŸ©",
@@ -479,9 +522,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RY(Ï€/3)|XâŸ©::omp::16": {
     "test_name": "RY(Ï€/3)|XâŸ©",
@@ -490,9 +534,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ+RX+RY+CNOT::omp::1": {
     "test_name": "RZ+RX+RY+CNOT",
@@ -501,9 +546,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ+RX+RY+CNOT::omp::4": {
     "test_name": "RZ+RX+RY+CNOT",
@@ -512,9 +558,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::RZ+RX+RY+CNOT::omp::16": {
     "test_name": "RZ+RX+RY+CNOT",
@@ -523,9 +570,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell ZZ::omp::1": {
     "test_name": "Bell ZZ",
@@ -534,9 +582,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell ZZ::omp::4": {
     "test_name": "Bell ZZ",
@@ -545,9 +594,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell ZZ::omp::16": {
     "test_name": "Bell ZZ",
@@ -556,9 +606,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell XX::omp::1": {
     "test_name": "Bell XX",
@@ -567,9 +618,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell XX::omp::4": {
     "test_name": "Bell XX",
@@ -578,9 +630,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::Bell XX::omp::16": {
     "test_name": "Bell XX",
@@ -589,9 +642,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT IZâ†’ZZ::omp::1": {
     "test_name": "CNOT IZâ†’ZZ",
@@ -600,9 +654,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT IZâ†’ZZ::omp::4": {
     "test_name": "CNOT IZâ†’ZZ",
@@ -611,9 +666,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT IZâ†’ZZ::omp::16": {
     "test_name": "CNOT IZâ†’ZZ",
@@ -622,9 +678,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT XIâ†’XX::omp::1": {
     "test_name": "CNOT XIâ†’XX",
@@ -633,9 +690,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT XIâ†’XX::omp::4": {
     "test_name": "CNOT XIâ†’XX",
@@ -644,9 +702,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::CNOT XIâ†’XX::omp::16": {
     "test_name": "CNOT XIâ†’XX",
@@ -655,9 +714,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GHZ ZZI::omp::1": {
     "test_name": "GHZ ZZI",
@@ -666,9 +726,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GHZ ZZI::omp::4": {
     "test_name": "GHZ ZZI",
@@ -677,9 +738,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GHZ ZZI::omp::16": {
     "test_name": "GHZ ZZI",
@@ -688,9 +750,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::XXX+RZ::omp::1": {
     "test_name": "XXX+RZ",
@@ -699,9 +762,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::XXX+RZ::omp::4": {
     "test_name": "XXX+RZ",
@@ -710,9 +774,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::XXX+RZ::omp::16": {
     "test_name": "XXX+RZ",
@@ -721,9 +786,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::4q GHZ ZZZZ::omp::1": {
     "test_name": "4q GHZ ZZZZ",
@@ -732,9 +798,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::4q GHZ ZZZZ::omp::4": {
     "test_name": "4q GHZ ZZZZ",
@@ -743,9 +810,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::4q GHZ ZZZZ::omp::16": {
     "test_name": "4q GHZ ZZZZ",
@@ -754,9 +822,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::5q ZZZ mixed::omp::1": {
     "test_name": "5q ZZZ mixed",
@@ -765,9 +834,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::5q ZZZ mixed::omp::4": {
     "test_name": "5q ZZZ mixed",
@@ -776,9 +846,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::5q ZZZ mixed::omp::16": {
     "test_name": "5q ZZZ mixed",
@@ -787,9 +858,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 300w 50L Clifford::omp::1": {
     "test_name": "7q 300w 50L Clifford",
@@ -798,9 +870,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 300w 50L Clifford::omp::4": {
     "test_name": "7q 300w 50L Clifford",
@@ -809,9 +882,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 300w 50L Clifford::omp::16": {
     "test_name": "7q 300w 50L Clifford",
@@ -820,9 +894,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 100w 20L RZ+CNOT (wâ‰¤4)::omp::1": {
     "test_name": "7q 100w 20L RZ+CNOT (wâ‰¤4)",
@@ -831,9 +906,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 100w 20L RZ+CNOT (wâ‰¤4)::omp::4": {
     "test_name": "7q 100w 20L RZ+CNOT (wâ‰¤4)",
@@ -842,9 +918,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::7q 100w 20L RZ+CNOT (wâ‰¤4)::omp::16": {
     "test_name": "7q 100w 20L RZ+CNOT (wâ‰¤4)",
@@ -853,9 +930,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-1: 7q 5Kw 100L Clifford::omp::1": {
     "test_name": "GPU-1: 7q 5Kw 100L Clifford",
@@ -864,9 +942,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-1: 7q 5Kw 100L Clifford::omp::4": {
     "test_name": "GPU-1: 7q 5Kw 100L Clifford",
@@ -875,9 +954,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-1: 7q 5Kw 100L Clifford::omp::16": {
     "test_name": "GPU-1: 7q 5Kw 100L Clifford",
@@ -886,9 +966,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-2: 7q all-rotation 15L (wâ‰¤4)::omp::1": {
     "test_name": "GPU-2: 7q all-rotation 15L (wâ‰¤4)",
@@ -897,9 +978,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-2: 7q all-rotation 15L (wâ‰¤4)::omp::4": {
     "test_name": "GPU-2: 7q all-rotation 15L (wâ‰¤4)",
@@ -908,9 +990,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-2: 7q all-rotation 15L (wâ‰¤4)::omp::16": {
     "test_name": "GPU-2: 7q all-rotation 15L (wâ‰¤4)",
@@ -919,9 +1002,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-3: 6q complex-coeff 40L Clifford::omp::1": {
     "test_name": "GPU-3: 6q complex-coeff 40L Clifford",
@@ -930,9 +1014,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-3: 6q complex-coeff 40L Clifford::omp::4": {
     "test_name": "GPU-3: 6q complex-coeff 40L Clifford",
@@ -941,9 +1026,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-3: 6q complex-coeff 40L Clifford::omp::16": {
     "test_name": "GPU-3: 6q complex-coeff 40L Clifford",
@@ -952,9 +1038,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)::omp::1": {
     "test_name": "GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)",
@@ -963,9 +1050,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)::omp::4": {
     "test_name": "GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)",
@@ -974,9 +1062,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)::omp::16": {
     "test_name": "GPU-4: 7q T+CNOT+H 30L (wâ‰¤5)",
@@ -985,9 +1074,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-5: 9q 500w 30L Clifford::omp::1": {
     "test_name": "GPU-5: 9q 500w 30L Clifford",
@@ -996,9 +1086,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 1,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-5: 9q 500w 30L Clifford::omp::4": {
     "test_name": "GPU-5: 9q 500w 30L Clifford",
@@ -1007,9 +1098,10 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 4,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   },
   "verify_correctness::GPU-5: 9q 500w 30L Clifford::omp::16": {
     "test_name": "GPU-5: 9q 500w 30L Clifford",
@@ -1018,8 +1110,9 @@
     "source": "verify_correctness",
     "test_index": -1,
     "threads": 16,
+    "nterms": -1,
     "correct": "PASS",
     "notes": "correctness check only",
-    "timestamp": "2026-03-04T06:33:29Z"
+    "timestamp": "2026-03-04T06:50:45Z"
   }
 }

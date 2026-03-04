@@ -58,6 +58,7 @@ class Row:
     source     : str
     test_index : int  = -1
     threads    : int  = 1
+    nterms     : int  = -1   # output Pauli-word count (-1 = not measured)
     correct    : str  = "N/A"
     notes      : str  = ""
     timestamp  : str  = field(
