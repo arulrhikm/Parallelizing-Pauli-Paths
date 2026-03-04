@@ -1,22 +1,134 @@
 {
     "version": "2.0.0",
     "tasks": [
+        // ── Build ─────────────────────────────────────────────────────────
         {
-            "label": "Build pauli_propagation.cpp",
+            "label": "Build: CPU (no CUDA needed)",
             "type": "shell",
-            "command": "g++",
-            "args": [
-                "-g",
-                "C:/Users/arulr/Projects/ParallelPauliPaths/pauli_propogation.cpp",  // Path to your C++ source file
-                "-o",
-                "C:/Users/arulr/Projects/ParallelPauliPaths/pauli_propagation.exe"  // Output executable
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "command": "python3",
+            "args": ["scripts/build.py", "cpu"],
+            "group": { "kind": "build", "isDefault": false },
             "problemMatcher": ["$gcc"],
-            "detail": "Generated task to build pauli_propagation.cpp"
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Build: OMP (no CUDA needed)",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/build.py", "omp"],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": ["$gcc"],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Build: All (CPU + OMP + GPU via make, GHC only)",
+            "type": "shell",
+            "command": "cd src && make clean && make all && cd ..",
+            "group": { "kind": "build", "isDefault": false },
+            "problemMatcher": ["$gcc"],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Build: Clean",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/build.py", "clean"],
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ── Correctness Verification ──────────────────────────────────────
+        {
+            "label": "Verify: Correctness (OMP + GPU)",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/verify_correctness.py"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Verify: OMP smoke test (all 34 tests)",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/verify_omp_correctness.py"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Test: Run all tests on CPU",
+            "type": "shell",
+            "command": "./pauli_propagation_cpu.exe",
+            "args": ["all", "cpu"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Test: Run all tests on OMP (16 threads)",
+            "type": "shell",
+            "command": "./pauli_propagation_omp.exe",
+            "args": ["all", "omp", "-j", "16"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ── Benchmarks ────────────────────────────────────────────────────
+        {
+            "label": "Benchmark: CPU vs OMP vs GPU (paper table)",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/run_benchmark.py"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Benchmark: CPU vs OMP only (no GPU)",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/run_benchmark.py", "--no-gpu"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Benchmark: Qiskit comparison",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/benchmark_qiskit.py"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Benchmark: Julia (PauliPropagation.jl)",
+            "type": "shell",
+            "command": "julia",
+            "args": ["scripts/benchmark_julia.jl"],
+            "group": "test",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        // ── Figures ───────────────────────────────────────────────────────
+        {
+            "label": "Figures: Generate all",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/generate_all_figures.py"],
+            "group": "none",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Figures: Performance analysis",
+            "type": "shell",
+            "command": "python3",
+            "args": ["scripts/performance_analysis.py"],
+            "group": "none",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
         }
     ]
 }
