@@ -26,8 +26,26 @@ except ImportError:
 # ---------------------------------------------------------------------------
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO        = SCRIPTS_DIR.parent
+
+# Use /tmp as fallback when project directory is over AFS quota
+def _output_dir():
+    test_file = REPO / ".quota_test_cv"
+    try:
+        test_file.write_text("x")
+        test_file.unlink()
+        return REPO
+    except OSError:
+        d = Path("/tmp/pauli_results")
+        d.mkdir(exist_ok=True)
+        print(f"  [INFO] AFS quota exceeded — saving outputs to {d}")
+        return d
+
+OUT_DIR = _output_dir()
 IMAGES_DIR  = REPO / "images"
-IMAGES_DIR.mkdir(exist_ok=True)
+try:
+    IMAGES_DIR.mkdir(exist_ok=True)
+except OSError:
+    IMAGES_DIR = OUT_DIR
 
 CPU_EXE = REPO / "pauli_propagation_cpu.exe"
 OMP_EXE = REPO / "pauli_propagation_omp.exe"
@@ -177,7 +195,7 @@ def make_plots(rows, mode_labels):
             fontsize=7.5, va='top', family='monospace')
 
     plt.tight_layout()
-    out = REPO / 'correctness_validation.png'
+    out = OUT_DIR / 'correctness_validation.png'
     plt.savefig(str(out), dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  Saved: {out}")
@@ -218,10 +236,13 @@ def main():
     rows = collect(modes)
 
     # save JSON
-    out_json = REPO / 'validation_results.json'
-    with open(out_json, 'w') as f:
-        json.dump(rows, f, indent=2)
-    print(f'\n  Saved: {out_json}')
+    out_json = OUT_DIR / 'validation_results.json'
+    try:
+        with open(out_json, 'w') as f:
+            json.dump(rows, f, indent=2)
+        print(f'\n  Saved: {out_json}')
+    except OSError as e:
+        print(f'\n  [WARN] Could not save JSON: {e}')
 
     # generate plots
     make_plots(rows, mode_labels)

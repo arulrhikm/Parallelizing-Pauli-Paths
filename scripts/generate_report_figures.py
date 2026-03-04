@@ -37,6 +37,20 @@ except ImportError:
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO        = SCRIPTS_DIR.parent
 
+def _output_dir():
+    """Fall back to /tmp when project AFS directory is over quota."""
+    test = REPO / ".quota_test_rf"
+    try:
+        test.write_text("x"); test.unlink()
+        return REPO
+    except OSError:
+        d = Path("/tmp/pauli_results")
+        d.mkdir(exist_ok=True)
+        print(f"  [INFO] AFS quota exceeded — saving outputs to {d}")
+        return d
+
+OUT_DIR = _output_dir()
+
 CPU_EXE = REPO / "pauli_propagation_cpu.exe"
 OMP_EXE = REPO / "pauli_propagation_omp.exe"
 GPU_EXE = REPO / "pauli_propagation_gpu.exe"
@@ -128,7 +142,7 @@ def collect_data(run_gpu=True, omp_threads=None):
 # ---------------------------------------------------------------------------
 def save_csv(rows, path=None):
     if path is None:
-        path = REPO / 'benchmark_results_report.csv'
+        path = OUT_DIR / 'benchmark_results_report.csv'
     if not rows:
         return
     keys = list(rows[0].keys())
@@ -229,7 +243,7 @@ def fig_timing_comparison(rows):
                             ha='center', va='bottom', fontsize=6.5)
 
     plt.tight_layout()
-    out = REPO / 'timing_comparison.png'
+    out = OUT_DIR / 'timing_comparison.png'
     plt.savefig(str(out), dpi=150, bbox_inches='tight')
     plt.close()
     print(f'  Saved: {out.name}')
@@ -275,7 +289,7 @@ def fig_speedup_chart(rows):
                             ha='center', va='bottom', fontsize=7)
 
     plt.tight_layout()
-    out = REPO / 'speedup_chart.png'
+    out = OUT_DIR / 'speedup_chart.png'
     plt.savefig(str(out), dpi=150, bbox_inches='tight')
     plt.close()
     print(f'  Saved: {out.name}')
@@ -310,7 +324,7 @@ def fig_performance_scaling(rows):
     ax.grid(True, alpha=0.3, which='both')
 
     plt.tight_layout()
-    out = REPO / 'performance_scaling.png'
+    out = OUT_DIR / 'performance_scaling.png'
     plt.savefig(str(out), dpi=150, bbox_inches='tight')
     plt.close()
     print(f'  Saved: {out.name}')
@@ -393,7 +407,7 @@ def fig_report_summary(rows):
     ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
-    out = REPO / 'report_summary.png'
+    out = OUT_DIR / 'report_summary.png'
     plt.savefig(str(out), dpi=150, bbox_inches='tight')
     plt.close()
     print(f'  Saved: {out.name}')
