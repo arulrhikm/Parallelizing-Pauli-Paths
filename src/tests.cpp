@@ -771,6 +771,249 @@ static vector<TestCase> create_test_cases() {
     tests.push_back({"SCALE-5: 9q, 100K words, 10 layers", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
   }
 
+  // =====================================================================
+  // DIVERSE GPU STRESS TESTS  (indices 39-46)
+  // Designed to: (a) favour GPU via large word counts, and (b) cover a
+  // wide variety of gate sets — Clifford (H, S, T, CNOT) and parametric
+  // rotations (RZ, RX, RY) — so the benchmark represents realistic
+  // quantum-simulation workloads.
+  // =====================================================================
+
+  // Test 39: DIVERSE-1: 10q, 30K words, 20L  H+CNOT  (GPU ~117 blocks)
+  // 10-qubit Clifford, word count preserved exactly.
+  {
+    int nq = 10;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(3901);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 30000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 20; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-1: 10q, 30K H+CNOT, 20L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 40: DIVERSE-2: 10q, 60K words, 10L  H+CNOT  (GPU ~234 blocks)
+  // Largest Clifford test — GPU fully saturated (>4 blocks/SM).
+  {
+    int nq = 10;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4001);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 60000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 10; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-2: 10q, 60K H+CNOT, 10L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 41: DIVERSE-3: 9q, 25K words, 30L  T+H+CNOT  (GPU ~98 blocks)
+  // Clifford with T gates — each layer: T on every qubit, H on evens, CNOT chain.
+  // Word count is preserved (T is a Clifford on Z-stabilisers).
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4101);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 25000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 30; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(T, {q}));
+      for (int q = 0; q < nq; q += 2)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-3: 9q, 25K T+H+CNOT, 30L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 42: DIVERSE-4: 9q, 35K words, 20L  S+H+CNOT  (GPU ~137 blocks)
+  // S gates alternate with H and CNOT — diverse single-qubit Clifford mix.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4201);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 35000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 20; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(S, {q}));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-4: 9q, 35K S+H+CNOT, 20L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 43: DIVERSE-5: 9q, 5K words, 8L  RZ(π/8)+CNOT  (rotation fan-out)
+  // RZ is a non-Clifford rotation → each word can split into 2.
+  // With max_weight=10 and 9 qubits the word count grows but stays bounded.
+  // This test covers the rotation-dominated regime (NISQ VQE-style circuits).
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4301);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 5000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 8; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(RZ, {q}, M_PI / 8.0));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-5: 9q, 5K RZ+CNOT, 8L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 44: DIVERSE-6: 9q, 4K words, 6L  RX(π/8)+H+CNOT  (mixed rotation)
+  // RX rotation mixed with Clifford gates — representative of hardware-efficient
+  // ansatz circuits used in VQE.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4401);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 4000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 6; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(RX, {q}, M_PI / 8.0));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-6: 9q, 4K RX+H+CNOT, 6L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 45: DIVERSE-7: 10q, 25K words, 15L  H+S+T+CNOT  (all Clifford types)
+  // Every supported Clifford gate in one circuit — broadest single-qubit coverage.
+  {
+    int nq = 10;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4501);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 25000;
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 15; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(S, {q}));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(T, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-7: 10q, 25K H+S+T+CNOT, 15L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
+  // Test 46: DIVERSE-8: 9q, 45K words, 15L  RZ+RX+H+CNOT  (NISQ mixed)
+  // Both rotation types + Clifford in every layer — the most realistic workload.
+  // Word count grows from rotations then stabilises via max_weight truncation.
+  {
+    int nq = 9;
+    std::map<PauliWord, Complex> obs;
+    std::mt19937_64 rng(4601);
+    std::uniform_int_distribution<int> opdis(0, 3);
+    int num_words = 8000;   // start with 8K; rotations grow to ~30-50K
+    for (int w = 0; w < num_words; ++w) {
+      PauliWord pw(nq);
+      for (int q = 0; q < nq; ++q) {
+        int od = opdis(rng);
+        if (od == 0) continue;
+        pw.ops[q] = (od == 1) ? X : (od == 2) ? Y : Z;
+      }
+      obs[pw] += Complex(1.0, 0.0);
+    }
+    vector<Gate> circ;
+    for (int layer = 0; layer < 15; ++layer) {
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(RZ, {q}, M_PI / 6.0));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(RX, {q}, M_PI / 6.0));
+      for (int q = 0; q < nq; ++q)
+        circ.push_back(Gate(HADAMARD, {q}));
+      for (int q = 0; q + 1 < nq; ++q)
+        circ.push_back(Gate(CNOT, {q, q + 1}));
+    }
+    tests.push_back({"DIVERSE-8: 9q, 8K->~40K RZ+RX+H+CNOT, 15L", nq, obs, circ, Complex(0.0, 0.0), 1e6, 1});
+  }
+
   // // MultiBlock B: Testing multi threadblocks with rotations
   // {
   //   int nq = 9;

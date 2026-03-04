@@ -19,8 +19,15 @@ Output:
 import subprocess
 import sys
 import os
+import re
 import shutil
 from pathlib import Path
+
+try:
+    from shared_results import append_rows, Row as SRow
+    _SHARED_OK = True
+except ImportError:
+    _SHARED_OK = False
 
 REPO   = Path(__file__).resolve().parent.parent
 SRC    = REPO / "src"
@@ -93,13 +100,18 @@ def build_gpu(nvcc, cxx):
 # Run helpers
 # ---------------------------------------------------------------------------
 def run_verifier(exe, label):
-    """Run a verifier and return (passed: bool, no_device: bool)."""
+    """Run a verifier; return (passed, no_device, timing_rows).
+
+    timing_rows is a list of SRow objects parsed from the verifier output,
+    suitable for writing to benchmark_summary.csv.
+    """
     print("=" * 64)
     print(f"  RUNNING: {label}")
     print(f"  Executable: {exe}")
     print("=" * 64)
     r = subprocess.run([str(exe)], capture_output=True, text=True, timeout=300)
-    print(r.stdout)
+    output = r.stdout
+    print(output)
     no_device = False
     if r.stderr:
         print("STDERR:", r.stderr[:600])
@@ -109,7 +121,46 @@ def run_verifier(exe, label):
             print("        This is NOT a code correctness failure.")
             print("        Re-run verify_correctness.py on a GPU node (ghc38/ghc-gpu).")
             print("        OMP results above are still valid.\n")
-    return r.returncode == 0, no_device
+
+    # Parse per-test-case timing/correctness from stdout
+    # The verifier prints lines like:
+    #   --- <test name> ---
+    #   OMP-1t   truth=...  got=...  err=...  PASS
+    #   GPU      truth=...  got=...  err=...  PASS
+    timing_rows = []
+    if _SHARED_OK:
+        current_case = None
+        for line in output.splitlines():
+            m = re.match(r"^--- (.+?) ---\s*$", line)
+            if m:
+                current_case = m.group(1).strip()
+                continue
+            if current_case is None:
+                continue
+            # Match:  OMP-4t    truth=...  got=...  err=...  PASS
+            for pat, backend, threads in [
+                (r"OMP-(\d+)t\s+truth=.*?(PASS|FAIL)", "omp", None),
+                (r"GPU\s+truth=.*?(PASS|FAIL)",          "gpu", 0),
+            ]:
+                mm = re.search(pat, line)
+                if mm:
+                    if backend == "omp":
+                        thr = int(mm.group(1))
+                        correct = mm.group(2)
+                    else:
+                        thr = 0
+                        correct = mm.group(1)
+                    timing_rows.append(SRow(
+                        test_name = current_case,
+                        backend   = backend,
+                        threads   = thr,
+                        time_s    = -1.0,      # verifier doesn't print per-check timing
+                        correct   = correct,
+                        source    = "verify_correctness",
+                        notes     = "correctness check only",
+                    ))
+
+    return r.returncode == 0, no_device, timing_rows
 
 # ---------------------------------------------------------------------------
 # Main
@@ -129,14 +180,16 @@ def main():
         sys.exit(1)
 
     results = []
+    all_timing_rows = []
 
     # ---- OMP ----
     print(">>> Step 1: Build and run OMP verifier\n")
     if _EXE_DIR != REPO:
         print(f"  (AFS quota exceeded — building to {_EXE_DIR})\n")
     if build_omp(cxx):
-        ok, _ = run_verifier(OMP_EXE, "OMP correctness (1 / 4 / 16 threads vs CPU-seq)")
+        ok, _, rows = run_verifier(OMP_EXE, "OMP correctness (1 / 4 / 16 threads vs CPU-seq)")
         results.append(("OMP", ok, None))
+        all_timing_rows.extend(rows)
     else:
         results.append(("OMP", False, None))
 
@@ -144,7 +197,8 @@ def main():
     if nvcc:
         print("\n>>> Step 2: Build and run GPU verifier\n")
         if build_gpu(nvcc, cxx):
-            ok, no_device = run_verifier(GPU_EXE, "GPU correctness vs CPU-seq")
+            ok, no_device, rows = run_verifier(GPU_EXE, "GPU correctness vs CPU-seq")
+            all_timing_rows.extend(rows)
             if no_device:
                 results.append(("GPU", True, "no CUDA device on this node — re-run on ghc38/ghc-gpu"))
             else:
@@ -175,6 +229,10 @@ def main():
         print("  All verifiers PASSED.")
     else:
         print("  One or more verifiers FAILED – see output above.")
+
+    # ---- Write correctness results to shared CSV ----
+    if _SHARED_OK and all_timing_rows:
+        append_rows(all_timing_rows)
 
     sys.exit(0 if all_pass else 1)
 

@@ -83,31 +83,41 @@ cd src && make gpu && cd ..
 
 ## 3. Test Index Reference
 
-The test suite has **34 tests** (vector indices 0–33):
+The test suite has **47 tests** (vector indices 0–46):
 
-| CLI index | Display # | Name | Category |
-|-----------|-----------|------|----------|
-| 0–21 | 1–22 | Hadamard, Bell, GHZ, rotations, … | Basic correctness |
-| 22 | 23 | MultiBlock A: No rotations | Integration |
-| 23 | 24 | MultiBlock B: with rotations | Integration |
-| **24** | **25** | **STRESS 23: 7q, 2K words, 100 layers** | Stress |
-| 25 | 26 | STRESS 24: 7q, 5K words, 150 layers | Stress |
-| 26 | 27 | STRESS 25: 7q, 3K words, 200 layers | Stress |
-| 27 | 28 | STRESS 26: 7q, 1K words, 300 layers | Stress |
-| 28 | 29 | STRESS 27: 7q, 4K words, 100 layers | Stress |
-| 29 | 30 | STRESS 28: 7q, 2K words, 250 layers | Stress |
-| 30 | 31 | STRESS 29: 7q, 1K words, 400 layers | Stress |
-| 31 | 32 | STRESS 30: 7q, 8K words,  50 layers | Stress |
-| 32 | 33 | STRESS 31: 7q, 500 words, 500 layers | Stress |
-| **33** | **34** | **STRESS 32: 7q, 5K words, 120 layers** | Stress |
+| CLI index | Name | Category | GPU blocks |
+|-----------|------|----------|-----------|
+| 0–21 | Hadamard, Bell, GHZ, rotations, … | Basic correctness | — |
+| 22 | MultiBlock A: No rotations | Integration | — |
+| 23 | MultiBlock B: with rotations | Integration | — |
+| 24–33 | STRESS 23–32: 7q, 500–8K words | Stress | 2–32 |
+| 34 | SCALE-1: 9q, 10K words, 30L H+CNOT | Scale | ~39 |
+| 35 | SCALE-2: 9q, 15K words, 30L H+CNOT | Scale | ~59 |
+| 36 | SCALE-3: 9q, 20K words, 30L H+CNOT | Scale | ~78 |
+| 37 | SCALE-4: 9q, 50K words, 20L H+CNOT | Scale | ~195 |
+| 38 | SCALE-5: 9q, 100K words, 10L H+CNOT | Scale | ~390 |
+| **39** | **DIVERSE-1: 10q, 30K words, 20L H+CNOT** | Diverse | ~117 |
+| **40** | **DIVERSE-2: 10q, 60K words, 10L H+CNOT** | Diverse | ~234 |
+| **41** | **DIVERSE-3: 9q, 25K words, 30L T+H+CNOT** | Diverse | ~98 |
+| **42** | **DIVERSE-4: 9q, 35K words, 20L S+H+CNOT** | Diverse | ~137 |
+| **43** | **DIVERSE-5: 9q, 5K words, 8L RZ+CNOT** | Diverse/Rotation | varies |
+| **44** | **DIVERSE-6: 9q, 4K words, 6L RX+H+CNOT** | Diverse/Rotation | varies |
+| **45** | **DIVERSE-7: 10q, 25K words, 15L H+S+T+CNOT** | Diverse | ~98 |
+| **46** | **DIVERSE-8: 9q, 8K→~40K words, 15L RZ+RX+H+CNOT** | Diverse/Rotation | varies |
+
+> **DIVERSE tests** (39–46) are designed to: (a) saturate GPU SMs with large
+> word counts, and (b) cover all supported gate types — H, S, T, CNOT (Clifford)
+> and RZ, RX (parametric rotations).  
+> *Rotation tests (43, 44, 46) fan out words; GPU advantage is moderate.*  
+> *10-qubit tests (39, 40, 45) are the largest workload per block.*
 
 **Usage:** pass the CLI index directly:
 
 ```bash
-./pauli_propagation_cpu.exe 24 cpu    # STRESS 23, sequential CPU
-./pauli_propagation_omp.exe 24 omp -j 16  # STRESS 23, 16 OMP threads
-./pauli_propagation_gpu.exe 24 gpu    # STRESS 23, GPU
-./pauli_propagation_cpu.exe all cpu   # run all 34 tests
+./pauli_propagation_cpu.exe 39 cpu         # DIVERSE-1, sequential CPU
+./pauli_propagation_omp.exe 39 omp -j 16  # DIVERSE-1, 16 OMP threads
+./pauli_propagation_gpu.exe 39 gpu        # DIVERSE-1, GPU
+./pauli_propagation_cpu.exe all cpu       # run all 47 tests
 ```
 
 ---
@@ -148,19 +158,19 @@ cd ..
 
 ### 4b. Smoke test (Python — fast, 1–2 min)
 
-Runs all 34 built-in tests on the OMP executable, verifies no crashes:
+Runs all 47 built-in tests on the OMP executable, verifies no crashes:
 
 ```bash
-python3 scripts/verify_omp_correctness.py          # full (all 34 tests)
+python3 scripts/verify_omp_correctness.py          # full (all 47 tests)
 python3 scripts/verify_omp_correctness.py --quick  # basic only (tests 0–21)
 ```
 
 ### 4c. Run full test suite on each executable
 
 ```bash
-./pauli_propagation_cpu.exe all cpu          # sequential CPU  (34/34 expected)
-./pauli_propagation_omp.exe all omp -j 16   # OMP 16-thread   (34/34 expected)
-./pauli_propagation_gpu.exe all gpu          # GPU             (34/34 expected)
+./pauli_propagation_cpu.exe all cpu          # sequential CPU  (47/47 expected)
+./pauli_propagation_omp.exe all omp -j 16   # OMP 16-thread   (47/47 expected)
+./pauli_propagation_gpu.exe all gpu          # GPU             (47/47 expected)
 ```
 
 ---
@@ -169,29 +179,33 @@ python3 scripts/verify_omp_correctness.py --quick  # basic only (tests 0–21)
 
 ### 5a. Primary benchmark: CPU-seq vs OMP vs GPU
 
-Runs stress tests 23–32 (CLI indices 24–33) across all configurations and writes
-timing data to `scripts/benchmark_results.csv`.
+Runs the GPU-favorable test set (STRESS + SCALE + DIVERSE, indices 25–46)
+across all configurations and writes timing data to two places:
+- `scripts/benchmark_results.csv` — per-script per-run CSV
+- `scripts/benchmark_summary.csv` — **shared sink** updated by all three scripts
 
 ```bash
-python3 scripts/run_benchmark.py                  # full run (may take 30 min)
-python3 scripts/run_benchmark.py --no-gpu         # skip GPU (Windows)
-python3 scripts/run_benchmark.py --tests 24-28    # subset of tests
+python3 scripts/run_benchmark.py                   # full run on GHC (~30 min)
+python3 scripts/run_benchmark.py --no-gpu          # skip GPU (Windows / no CUDA)
+python3 scripts/run_benchmark.py --tests 39-46     # DIVERSE tests only
+python3 scripts/run_benchmark.py --tests 34-46     # SCALE + DIVERSE
 ```
 
 Output includes:
 - Wall-clock times for CPU-seq, OMP-1/2/4/8/16, GPU
 - Speedup columns: `S(seq/Nt)`, `S(seq/GPU)`, `S(Nt/GPU)`
 - Average speedup summary
+- Rows appended to `scripts/benchmark_summary.csv`
 
 ### 5b. Single test, single mode
 
 ```bash
-./pauli_propagation_cpu.exe 24 cpu              # STRESS 23, CPU-seq
-./pauli_propagation_omp.exe 24 omp -j 1         # STRESS 23, OMP 1-thread
-./pauli_propagation_omp.exe 24 omp -j 4         # STRESS 23, OMP 4-thread
-./pauli_propagation_omp.exe 24 omp -j 8         # STRESS 23, OMP 8-thread
-./pauli_propagation_omp.exe 24 omp -j 16        # STRESS 23, OMP 16-thread
-./pauli_propagation_gpu.exe 24 gpu              # STRESS 23, GPU
+./pauli_propagation_cpu.exe 39 cpu              # DIVERSE-1, CPU-seq
+./pauli_propagation_omp.exe 39 omp -j 1         # DIVERSE-1, OMP 1-thread
+./pauli_propagation_omp.exe 39 omp -j 4         # DIVERSE-1, OMP 4-thread
+./pauli_propagation_omp.exe 39 omp -j 8         # DIVERSE-1, OMP 8-thread
+./pauli_propagation_omp.exe 39 omp -j 16        # DIVERSE-1, OMP 16-thread
+./pauli_propagation_gpu.exe 39 gpu              # DIVERSE-1, GPU
 ```
 
 ### 5c. Thread scaling sweep (OMP only)
@@ -199,10 +213,26 @@ Output includes:
 ```bash
 for j in 1 2 4 8 16; do
     echo "=== OMP $j threads ==="
-    for idx in 24 25 26 27 28 29 30 31 32 33; do
+    for idx in 39 40 41 42 43 44 45 46; do
         ./pauli_propagation_omp.exe $idx omp -j $j
     done
 done
+```
+
+### 5d. Shared results file
+
+All three benchmark scripts append rows to a single CSV:
+
+```
+scripts/benchmark_summary.csv
+```
+
+Schema: `timestamp, source, test_index, test_name, backend, threads, time_s, correct, notes`
+
+Read it in Python:
+```python
+import csv
+rows = list(csv.DictReader(open("scripts/benchmark_summary.csv", encoding="utf-8")))
 ```
 
 ---

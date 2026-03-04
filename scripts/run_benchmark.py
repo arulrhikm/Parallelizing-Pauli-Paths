@@ -27,6 +27,13 @@ import re
 from pathlib import Path
 from datetime import datetime
 
+# Shared results sink (optional – skip gracefully if not found)
+try:
+    from shared_results import append_rows, Row as SRow
+    _SHARED_OK = True
+except ImportError:
+    _SHARED_OK = False
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -41,10 +48,31 @@ GPU_EXE    = REPO_ROOT / "pauli_propagation_gpu.exe"
 #   index  22     → MultiBlock A
 #   index  23     → MultiBlock B
 #   indices 24-33 → STRESS 23 through STRESS 32
-# GPU-favorable selection: word count from 4K → 100K.
-# GPU advantage scales with word count (more blocks → better SM utilisation).
+# GPU-favorable selection: word count 4K → 100K (existing SCALE tests) plus
+# 8 new DIVERSE tests covering H+CNOT, T, S, RZ, RX, mixed Clifford.
 # Tests with <4K words are excluded (GPU underutilised on RTX 2080's 46 SMs).
-DEFAULT_STRESS_TESTS = [25, 28, 31, 34, 35, 36, 37, 38]
+DEFAULT_STRESS_TESTS = [25, 28, 31, 34, 35, 36, 37, 38,   # SCALE
+                        39, 40, 41, 42, 43, 44, 45, 46]   # DIVERSE
+
+# Human-readable labels for the shared results file (0-based test index → name)
+TEST_LABELS = {
+    25: "STRESS 24: 7q, 5K words, 150 layers",
+    28: "STRESS 27: 7q, 4K words, 100 layers",
+    31: "STRESS 30: 7q, 8K words, 50 layers",
+    34: "SCALE-1: 9q, 10K words, 30 layers",
+    35: "SCALE-2: 9q, 15K words, 30 layers",
+    36: "SCALE-3: 9q, 20K words, 30 layers",
+    37: "SCALE-4: 9q, 50K words, 20 layers",
+    38: "SCALE-5: 9q, 100K words, 10 layers",
+    39: "DIVERSE-1: 10q, 30K H+CNOT, 20L",
+    40: "DIVERSE-2: 10q, 60K H+CNOT, 10L",
+    41: "DIVERSE-3: 9q, 25K T+H+CNOT, 30L",
+    42: "DIVERSE-4: 9q, 35K S+H+CNOT, 20L",
+    43: "DIVERSE-5: 9q, 5K RZ+CNOT, 8L",
+    44: "DIVERSE-6: 9q, 4K RX+H+CNOT, 6L",
+    45: "DIVERSE-7: 10q, 25K H+S+T+CNOT, 15L",
+    46: "DIVERSE-8: 9q, 8K->~40K RZ+RX+H+CNOT, 15L",
+}
 OMP_THREAD_COUNTS    = [1, 2, 4, 8, 16]
 TIMEOUT_SECONDS      = 300                   # 5 min per test
 
@@ -307,6 +335,31 @@ def main():
                 print("  *** This machine has no CUDA-capable device.               ***")
                 print("  *** Re-run on a GPU node: ghc38, ghc40, etc.               ***")
                 print("  *** Example:  ssh arulm.ghc38.ghc@andrew.cmu.edu           ***")
+
+    # -------------------------------------------------- Write shared results
+    if _SHARED_OK:
+        shared = []
+        for t in tests:
+            label = TEST_LABELS.get(t, f"Test {t}")
+            r = results[t]
+            if not args.no_cpu and r.get("cpu_seq", -1) > 0:
+                shared.append(SRow(test_index=t, test_name=label,
+                                   backend="cpu_seq", threads=1,
+                                   time_s=r["cpu_seq"], source="run_benchmark"))
+            for j in thread_counts:
+                v = r.get(f"omp_{j}", -1)
+                if v > 0:
+                    shared.append(SRow(test_index=t, test_name=label,
+                                       backend="omp", threads=j,
+                                       time_s=v, source="run_benchmark"))
+            if not args.no_gpu:
+                g = r.get("gpu", -1)
+                if g > 0:
+                    shared.append(SRow(test_index=t, test_name=label,
+                                       backend="gpu", threads=0,
+                                       time_s=g, source="run_benchmark"))
+        if shared:
+            append_rows(shared)
 
 
 if __name__ == "__main__":
